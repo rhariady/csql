@@ -1,1 +1,5 @@
 /gomod2nix-template
+.aider*
+.direnv
+*~
+*.log
