@@ -25,25 +25,115 @@ func main() {
 
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		app := tview.NewApplication()
-		list := tview.NewList().
-			AddItem("Connect to a database", "", 'a', func() {
-				app.Stop()
-				connectToDatabase()
-			}).
-			AddItem("Discover databases", "", 'b', func() {
-				app.Stop()
-				discoverDatabases()
-			}).
-			AddItem("Quit", "", 'q', func() {
-				app.Stop()
-			})
 
-		if err := app.SetRoot(list, true).Run(); err != nil {
+		// Create the main database table
+		table := tview.NewTable().
+			SetBorders(false).
+			SetSelectable(true, false).
+			SetWrapSelection(true, true)
+
+		// Populate the table with instances
+		table.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
+			SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
+			SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
+
+		row := 1
+		for name, instance := range config.Instances {
+			table.SetCell(row, 0, tview.NewTableCell(name))
+			table.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
+			table.SetCell(row, 2, tview.NewTableCell(instance.Host))
+			row++
+		}
+
+		// Set the selected function for the table (triggered by Enter key)
+		table.SetSelectedFunc(func(row int, column int) {
+			if row == 0 { // Skip header row
+				return
+			}
+			instanceName := table.GetCell(row, 0).Text
+			showUserSelection(app, table, instanceName)
+		})
+
+		// Set input capture for 'e' key to trigger the same selection logic
+		table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			if event.Rune() == 'e' {
+				row, _ := table.GetSelection()
+				if row == 0 { // Skip header row
+					return event
+				}
+				instanceName := table.GetCell(row, 0).Text
+				showUserSelection(app, table, instanceName)
+				return nil // Consume the event
+			}
+			return event
+		})
+
+		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			switch event.Rune() {
+			case 'a':
+				discoverDatabases()
+				return nil // Consume the event
+			case 'q':
+				app.Stop()
+				return nil
+			}
+			return event
+		})
+
+		if err := app.SetRoot(table, true).Run(); err != nil {
 			panic(err)
 		}
 	} else {
 		fmt.Println("This application is intended to be run in an interactive terminal.")
 	}
+}
+
+func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceName string) {
+	userTable := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false)
+
+	userTable.SetCell(0, 0, tview.NewTableCell("Username")).
+		SetCell(0, 1, tview.NewTableCell("Auth Type"))
+
+	userRow := 1
+	for name, user := range config.Instances[instanceName].Users {
+		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
+		userTable.SetCell(userRow, 1, tview.NewTableCell(user.DefaultAuth))
+		userRow++
+	}
+
+	userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			app.SetRoot(mainTable, true) // Go back to instance table
+		}
+	}).SetSelectedFunc(func(row int, column int) {
+		userName := userTable.GetCell(row, 0).Text
+		app.Stop()
+		user := config.Instances[instanceName].Users[userName].Username
+		host := config.Instances[instanceName].Host
+		port := 5432
+		dbname := "postgres"
+
+		authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+		if err != nil {
+			panic(err)
+		}
+
+		password := authConfig.GetCredential()
+		connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbname)
+
+		fmt.Println("Connecting to:", connectionUri)
+		cmd := exec.Command("psql", connectionUri)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Println("Error:", err)
+		}
+	})
+
+	app.SetRoot(userTable, true)
 }
 
 func discoverDatabases() {
@@ -87,101 +177,6 @@ func discoverDatabases() {
 			app.Stop()
 		})
 	if err := app.SetRoot(form, true).Run(); err != nil {
-		panic(err)
-	}
-}
-
-func connectToDatabase() {
-	app := tview.NewApplication()
-
-	if len(config.Instances) == 0 {
-		modal := tview.NewModal().
-			SetText("No databases found. Please discover databases first.").
-			AddButtons([]string{"OK"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				app.Stop()
-			})
-		if err := app.SetRoot(modal, true).Run(); err != nil {
-			panic(err)
-		}
-		return
-	}
-
-	table := tview.NewTable().
-		SetBorders(false).
-		SetSelectable(true, false)
-
-	table.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
-		SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
-		SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
-
-	row := 1
-	for name, instance := range config.Instances {
-		table.SetCell(row, 0, tview.NewTableCell(name))
-		table.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
-		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
-		row++
-	}
-
-	table.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			app.Stop()
-		}
-	}).SetSelectedFunc(func(row int, column int) {
-		instanceName := table.GetCell(row, 0).Text
-		var userNames []string
-		for name := range config.Instances[instanceName].Users {
-			userNames = append(userNames, name)
-		}
-
-		userTable := tview.NewTable().
-				SetBorders(false).
-				SetSelectable(true, false)
-
-			userTable.SetCell(0, 0, tview.NewTableCell("Username").SetSelectable(false)).
-				SetCell(0, 1, tview.NewTableCell("Auth Type").SetSelectable(false))
-
-			userRow := 1
-			for name, user := range config.Instances[instanceName].Users {
-				userTable.SetCell(userRow, 0, tview.NewTableCell(name))
-				userTable.SetCell(userRow, 1, tview.NewTableCell(user.DefaultAuth))
-				userRow++
-			}
-
-			userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
-				if key == tcell.KeyEscape {
-					app.SetRoot(table, true) // Go back to instance table
-				}
-			}).SetSelectedFunc(func(row int, column int) {
-				userName := userTable.GetCell(row, 0).Text
-				app.Stop()
-				user := config.Instances[instanceName].Users[userName].Username
-				host := config.Instances[instanceName].Host
-				port := 5432
-				dbname := "postgres"
-
-				authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
-				if err != nil {
-					panic(err)
-				}
-
-				password := authConfig.GetCredential()
-				connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbname)
-
-				fmt.Println("Connecting to:", connectionUri)
-				cmd := exec.Command("psql", connectionUri)
-				cmd.Stdin = os.Stdin
-				cmd.Stdout = os.Stdout
-				cmd.Stderr = os.Stderr
-				if err := cmd.Run(); err != nil {
-					fmt.Println("Error:", err)
-				}
-			})
-
-			app.SetRoot(userTable, true)
-	})
-
-	if err := app.SetRoot(table, true).Run(); err != nil {
 		panic(err)
 	}
 }
