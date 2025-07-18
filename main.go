@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
 	vault "github.com/hashicorp/vault/api"
@@ -93,52 +94,78 @@ func discoverDatabases() {
 func connectToDatabase() {
 	app := tview.NewApplication()
 
-	var instanceNames []string
-	for name := range config.Instances {
-		instanceNames = append(instanceNames, name)
+	if len(config.Instances) == 0 {
+		modal := tview.NewModal().
+			SetText("No databases found. Please discover databases first.").
+			AddButtons([]string{"OK"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				app.Stop()
+			})
+		if err := app.SetRoot(modal, true).Run(); err != nil {
+			panic(err)
+		}
+		return
 	}
 
-	list := tview.NewList()
+	table := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false)
 
-	for _, instanceName := range instanceNames {
-		list.AddItem(instanceName, "", 0, func() {
-			var userNames []string
-			for name := range config.Instances[instanceName].Users {
-				userNames = append(userNames, name)
-			}
+	table.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
+		SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
+		SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
 
-			userList := tview.NewList()
-			for _, userName := range userNames {
-				userList.AddItem(userName, "", 0, func() {
-					app.Stop()
-					user := config.Instances[instanceName].Users[userName].Username
-					host := config.Instances[instanceName].Host
-					port := 5432
-					dbname := "postgres"
-
-					authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
-					if err != nil {
-						panic(err)
-					}
-
-					password := authConfig.GetCredential()
-					connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbname)
-
-					fmt.Println("Connecting to:", connectionUri)
-					cmd := exec.Command("psql", connectionUri)
-					cmd.Stdin = os.Stdin
-					cmd.Stdout = os.Stdout
-					cmd.Stderr = os.Stderr
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-					}
-				})
-			}
-			app.SetRoot(userList, true)
-		})
+	row := 1
+	for name, instance := range config.Instances {
+		table.SetCell(row, 0, tview.NewTableCell(name))
+		table.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
+		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
+		row++
 	}
 
-	if err := app.SetRoot(list, true).Run(); err != nil {
+	table.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			app.Stop()
+		}
+	}).SetSelectedFunc(func(row int, column int) {
+		instanceName := table.GetCell(row, 0).Text
+		var userNames []string
+		for name := range config.Instances[instanceName].Users {
+			userNames = append(userNames, name)
+		}
+
+		userList := tview.NewList()
+		for _, uName := range userNames {
+			userName := uName
+			userList.AddItem(userName, "", 0, func() {
+				app.Stop()
+				user := config.Instances[instanceName].Users[userName].Username
+				host := config.Instances[instanceName].Host
+				port := 5432
+				dbname := "postgres"
+
+				authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+				if err != nil {
+					panic(err)
+				}
+
+				password := authConfig.GetCredential()
+				connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbname)
+
+				fmt.Println("Connecting to:", connectionUri)
+				cmd := exec.Command("psql", connectionUri)
+				cmd.Stdin = os.Stdin
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if err := cmd.Run(); err != nil {
+					fmt.Println("Error:", err)
+				}
+			})
+		}
+		app.SetRoot(userList, true)
+	})
+
+	if err := app.SetRoot(table, true).Run(); err != nil {
 		panic(err)
 	}
 }

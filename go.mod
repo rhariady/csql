@@ -6,7 +6,9 @@ toolchain go1.24.3
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/hashicorp/vault/api v1.20.0
+	github.com/mattn/go-isatty v0.0.20
 	github.com/rivo/tview v0.0.0-20250625164341-a4a78f1e05cb
 	google.golang.org/api v0.235.0
 )
@@ -18,7 +20,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.8.1 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
