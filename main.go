@@ -134,10 +134,26 @@ func connectToDatabase() {
 			userNames = append(userNames, name)
 		}
 
-		userList := tview.NewList()
-		for _, uName := range userNames {
-			userName := uName
-			userList.AddItem(userName, "", 0, func() {
+		userTable := tview.NewTable().
+				SetBorders(false).
+				SetSelectable(true, false)
+
+			userTable.SetCell(0, 0, tview.NewTableCell("Username").SetSelectable(false)).
+				SetCell(0, 1, tview.NewTableCell("Auth Type").SetSelectable(false))
+
+			userRow := 1
+			for name, user := range config.Instances[instanceName].Users {
+				userTable.SetCell(userRow, 0, tview.NewTableCell(name))
+				userTable.SetCell(userRow, 1, tview.NewTableCell(user.DefaultAuth))
+				userRow++
+			}
+
+			userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
+				if key == tcell.KeyEscape {
+					app.SetRoot(table, true) // Go back to instance table
+				}
+			}).SetSelectedFunc(func(row int, column int) {
+				userName := userTable.GetCell(row, 0).Text
 				app.Stop()
 				user := config.Instances[instanceName].Users[userName].Username
 				host := config.Instances[instanceName].Host
@@ -161,8 +177,8 @@ func connectToDatabase() {
 					fmt.Println("Error:", err)
 				}
 			})
-		}
-		app.SetRoot(userList, true)
+
+			app.SetRoot(userTable, true)
 	})
 
 	if err := app.SetRoot(table, true).Run(); err != nil {
