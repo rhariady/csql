@@ -16,6 +16,9 @@ import (
 var config *Config
 
 func main() {
+	var app *tview.Application
+	var pages *tview.Pages
+
 	CheckConfigFile()
 	var err error
 	config, err = GetConfig()
@@ -23,40 +26,42 @@ func main() {
 		panic(err)
 	}
 
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		app := tview.NewApplication()
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		panic("This application is intended to be run in an interactive terminal.")
+	} else {
+		app = tview.NewApplication()
 
 		// Create the main database table
-		table := tview.NewTable().
+		databaseInstanceList := tview.NewTable().
 			SetBorders(false).
 			SetSelectable(true, false)
 
-		// Populate the table with instances
-		table.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
+		// Populate the table with database instances
+		databaseInstanceList.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
 			SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
 			SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
 
-		table.SetWrapSelection(true, true)
+		databaseInstanceList.SetWrapSelection(true, true)
 
 		row := 1
 		for name, instance := range config.Instances {
-			table.SetCell(row, 0, tview.NewTableCell(name))
-			table.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
-			table.SetCell(row, 2, tview.NewTableCell(instance.Host))
+			databaseInstanceList.SetCell(row, 0, tview.NewTableCell(name))
+			databaseInstanceList.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
+			databaseInstanceList.SetCell(row, 2, tview.NewTableCell(instance.Host))
 			row++
 		}
 
 		// Set the selected function for the table (triggered by Enter key)
-		table.SetSelectedFunc(func(row int, column int) {
+		databaseInstanceList.SetSelectedFunc(func(row int, column int) {
 			if row == 0 { // Skip header row
 				return
 			}
-			instanceName := table.GetCell(row, 0).Text
-			showUserSelection(app, table, instanceName)
+			instanceName := databaseInstanceList.GetCell(row, 0).Text
+			showUserSelection(app, pages, databaseInstanceList, instanceName)
 		})
 
 		// Set input capture for 'a' key to trigger the same selection logic
-		table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		databaseInstanceList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'a' {
 				discoverDatabases()
 				return nil // Consume the event
@@ -64,7 +69,7 @@ func main() {
 			return event
 		})
 
-		flex := tview.NewFlex().AddItem(table, 0, 1, true)
+		flex := tview.NewFlex().AddItem(databaseInstanceList, 0, 1, true)
 		flex.SetBorder(true).SetTitle("Databases")
 
 		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -76,15 +81,20 @@ func main() {
 			return event
 		})
 
-		if err := app.SetRoot(flex, true).Run(); err != nil {
+		pages = tview.NewPages().
+			AddPage("mainTable", flex, true, true)
+			//AddPage("userModal", centeredModal(modalFlex, 60, 20), true, true)
+
+		//app.SetRoot(pages, true).SetFocus(userTable)
+		//pages.SwitchToPage("userModal")
+
+		if err := app.SetRoot(pages, true).Run(); err != nil {
 			panic(err)
 		}
-	} else {
-		fmt.Println("This application is intended to be run in an interactive terminal.")
 	}
 }
 
-func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceName string) {
+func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
 	userTable := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false)
@@ -101,7 +111,8 @@ func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceN
 
 	userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEscape {
-			app.SetRoot(mainTable, true) // Go back to instance table
+			pages.RemovePage("userSelectionModal")
+			// app.SetRoot(mainTable, true) // Go back to instance table
 		}
 	}).SetSelectedFunc(func(row int, column int) {
 		userName := userTable.GetCell(row, 0).Text
@@ -138,21 +149,37 @@ func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceN
 	// Center the modal
 	centeredModal := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).AddItem(nil, 0, 1, false).AddItem(modalFlex, 0, 1, true).AddItem(nil, 0, 1, false), 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(modalFlex, 0, 1, true).
+			AddItem(nil, 0, 1, false), 0, 1, false).
 		AddItem(nil, 0, 1, false)
 
-	app.SetRoot(centeredModal, true).SetFocus(userTable)
+	pages.AddPage("userSelectionModal", centeredModal, true, true)
+	// pages.SwitchToPage("userSelectionModal")
+	app.SetFocus(userTable)
 
 	centeredModal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'a' {
-			showAddUserForm(app, mainTable, instanceName)
+			showAddUserForm(app, pages, mainTable, instanceName)
 			return nil // Consume the event
 		}
 		return event
 	})
 }
 
-func showAddUserForm(app *tview.Application, mainTable *tview.Table, instanceName string) {
+// Helper function to center a primitive
+func centeredModal(p tview.Primitive, width, height int) tview.Primitive {
+	return tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(p, height, 1, true).
+			AddItem(nil, 0, 1, false), width, 1, true).
+		AddItem(nil, 0, 1, false)
+}
+
+func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
 	var form *tview.Form
 	form = tview.NewForm().
 		AddInputField("Username", "", 20, nil, nil).
@@ -185,10 +212,10 @@ func showAddUserForm(app *tview.Application, mainTable *tview.Table, instanceNam
 				config.Instances[instanceName].Users[username] = newUser
 				config.WriteConfig()
 			}
-			showUserSelection(app, mainTable, instanceName)
+			showUserSelection(app, pages, mainTable, instanceName)
 		}).
 		AddButton("Cancel", func() {
-			showUserSelection(app, mainTable, instanceName)
+			showUserSelection(app, pages, mainTable, instanceName)
 		})
 	app.SetRoot(form, true)
 }
