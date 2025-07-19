@@ -129,15 +129,27 @@ func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceN
 		}
 	})
 
-	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(tview.NewTextView().SetText("Select User").SetTextAlign(tview.AlignCenter), 1, 1, false).
+		AddItem(userTable, 0, 1, true).
+		AddItem(tview.NewTextView().SetText("Press Esc to go back, 'a' to add user").SetTextAlign(tview.AlignCenter), 1, 1, false)
+	modalFlex.SetBorder(true).SetTitle("User Selection")
+
+	// Center the modal
+	centeredModal := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).AddItem(nil, 0, 1, false).AddItem(modalFlex, 0, 1, true).AddItem(nil, 0, 1, false), 0, 1, false).
+		AddItem(nil, 0, 1, false)
+
+	app.SetRoot(centeredModal, true).SetFocus(userTable)
+
+	centeredModal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'a' {
 			showAddUserForm(app, mainTable, instanceName)
 			return nil // Consume the event
 		}
 		return event
 	})
-
-	app.SetRoot(userTable, true)
 }
 
 func showAddUserForm(app *tview.Application, mainTable *tview.Table, instanceName string) {
