@@ -64,6 +64,9 @@ func main() {
 			return event
 		})
 
+		flex := tview.NewFlex().AddItem(table, 0, 1, true)
+		flex.SetBorder(true).SetTitle("Databases")
+
 		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Rune() {
 			case 'q':
@@ -73,7 +76,7 @@ func main() {
 			return event
 		})
 
-		if err := app.SetRoot(table, true).Run(); err != nil {
+		if err := app.SetRoot(flex, true).Run(); err != nil {
 			panic(err)
 		}
 	} else {
