@@ -29,13 +29,14 @@ func main() {
 		// Create the main database table
 		table := tview.NewTable().
 			SetBorders(false).
-			SetSelectable(true, false).
-			SetWrapSelection(true, true)
+			SetSelectable(true, false)
 
 		// Populate the table with instances
 		table.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
 			SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
 			SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
+
+		table.SetWrapSelection(true, true)
 
 		row := 1
 		for name, instance := range config.Instances {
@@ -54,15 +55,10 @@ func main() {
 			showUserSelection(app, table, instanceName)
 		})
 
-		// Set input capture for 'e' key to trigger the same selection logic
+		// Set input capture for 'a' key to trigger the same selection logic
 		table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			if event.Rune() == 'e' {
-				row, _ := table.GetSelection()
-				if row == 0 { // Skip header row
-					return event
-				}
-				instanceName := table.GetCell(row, 0).Text
-				showUserSelection(app, table, instanceName)
+			if event.Rune() == 'a' {
+				discoverDatabases()
 				return nil // Consume the event
 			}
 			return event
@@ -70,9 +66,6 @@ func main() {
 
 		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Rune() {
-			case 'a':
-				discoverDatabases()
-				return nil // Consume the event
 			case 'q':
 				app.Stop()
 				return nil
@@ -133,7 +126,56 @@ func showUserSelection(app *tview.Application, mainTable *tview.Table, instanceN
 		}
 	})
 
+	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == 'a' {
+			showAddUserForm(app, mainTable, instanceName)
+			return nil // Consume the event
+		}
+		return event
+	})
+
 	app.SetRoot(userTable, true)
+}
+
+func showAddUserForm(app *tview.Application, mainTable *tview.Table, instanceName string) {
+	var form *tview.Form
+	form = tview.NewForm().
+		AddInputField("Username", "", 20, nil, nil).
+		AddDropDown("Auth Type", []string{"vault"}, 0, nil).
+		AddInputField("Vault Address", "", 40, nil, nil).
+		AddInputField("Vault Mount Path", "", 40, nil, nil).
+		AddInputField("Vault Secret Path", "", 40, nil, nil).
+		AddInputField("Vault Secret Key", "", 40, nil, nil).
+		AddButton("Add User", func() {
+			username := form.GetFormItem(0).(*tview.InputField).GetText()
+			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
+			vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
+			vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
+			vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
+			vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+
+			if authType == "vault" {
+				newUser := UserConfig{
+					Username: username,
+					DefaultAuth: "vault",
+					Auth: map[string]interface{}{
+						"vault": map[string]string{
+							"address": vaultAddress,
+							"mount_path": vaultMountPath,
+							"secret_path": vaultSecretPath,
+							"secret_key": vaultSecretKey,
+						},
+					},
+				}
+				config.Instances[instanceName].Users[username] = newUser
+				config.WriteConfig()
+			}
+			showUserSelection(app, mainTable, instanceName)
+		}).
+		AddButton("Cancel", func() {
+			showUserSelection(app, mainTable, instanceName)
+		})
+	app.SetRoot(form, true)
 }
 
 func discoverDatabases() {
