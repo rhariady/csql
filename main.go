@@ -99,17 +99,14 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 		SetBorders(false).
 		SetSelectable(true, false)
 
-	userTable.SetCell(0, 0, tview.NewTableCell("Username")).
-		SetCell(0, 1, tview.NewTableCell("Auth Type"))
-
-	userRow := 1
+	userRow := 0
 	for name, user := range config.Instances[instanceName].Users {
 		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
-		userTable.SetCell(userRow, 1, tview.NewTableCell(user.DefaultAuth))
+		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.DefaultAuth)))
 		userRow++
 	}
 
-	userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
+	userTable.Select(0, 0).SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEscape {
 			pages.RemovePage("userSelectionModal")
 			// app.SetRoot(mainTable, true) // Go back to instance table
@@ -141,10 +138,9 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 	})
 
 	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetText("Select User").SetTextAlign(tview.AlignCenter), 1, 1, false).
 		AddItem(userTable, 0, 1, true).
 		AddItem(tview.NewTextView().SetText("Press Esc to go back, 'a' to add user").SetTextAlign(tview.AlignCenter), 1, 1, false)
-	modalFlex.SetBorder(true).SetTitle("User Selection")
+	modalFlex.SetBorder(true).SetTitle("Select user")
 
 	// Center the modal
 	centeredModal := tview.NewFlex().
