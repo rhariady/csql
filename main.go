@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-isatty"
@@ -96,18 +95,27 @@ func main() {
 }
 
 func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
-	userList := tview.NewList().
-		SetHighlightFullLine(true)
+	userTable := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false)
 
+	userTable.SetCell(0, 0, tview.NewTableCell("Username")).
+		SetCell(0, 1, tview.NewTableCell("Auth Type"))
+
+	userRow := 1
 	for name, user := range config.Instances[instanceName].Users {
-		userList.AddItem(fmt.Sprintf("%s (%s)", name, user.DefaultAuth), "", 0, nil)
+		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
+		userTable.SetCell(userRow, 1, tview.NewTableCell(user.DefaultAuth))
+		userRow++
 	}
 
-	userList.SetDoneFunc(func() {
-		pages.RemovePage("userSelectionModal")
-		app.SetFocus(mainTable)
-	}).SetSelectedFunc(func(idx int, mainText string, secondaryText string, shortcut rune) {
-		userName := strings.TrimSpace(mainText[0:20]) // Extract username from the list item
+	userTable.Select(1, 0).SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			pages.RemovePage("userSelectionModal")
+			// app.SetRoot(mainTable, true) // Go back to instance table
+		}
+	}).SetSelectedFunc(func(row int, column int) {
+		userName := userTable.GetCell(row, 0).Text
 		app.Stop()
 		user := config.Instances[instanceName].Users[userName].Username
 		host := config.Instances[instanceName].Host
@@ -134,15 +142,24 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 
 	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(tview.NewTextView().SetText("Select User").SetTextAlign(tview.AlignCenter), 1, 1, false).
-		AddItem(userList, 0, 1, true).
+		AddItem(userTable, 0, 1, true).
 		AddItem(tview.NewTextView().SetText("Press Esc to go back, 'a' to add user").SetTextAlign(tview.AlignCenter), 1, 1, false)
 	modalFlex.SetBorder(true).SetTitle("User Selection")
 
-	pages.AddPage("userSelectionModal", centeredModal(modalFlex, 0, 0), true, true)
-	// pages.SwitchToPage("userSelectionModal")
-	app.SetFocus(userList)
+	// Center the modal
+	centeredModal := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(modalFlex, 0, 1, true).
+			AddItem(nil, 0, 1, false), 0, 1, false).
+		AddItem(nil, 0, 1, false)
 
-	modalFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	pages.AddPage("userSelectionModal", centeredModal, true, true)
+	// pages.SwitchToPage("userSelectionModal")
+	app.SetFocus(userTable)
+
+	centeredModal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'a' {
 			showAddUserForm(app, pages, mainTable, instanceName)
 			return nil // Consume the event
