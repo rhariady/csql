@@ -74,6 +74,26 @@ func main() {
 		flex := tview.NewFlex().AddItem(databaseInstanceList, 0, 1, true)
 		flex.SetBorder(true).SetTitle("Instances")
 
+		logo := tview.NewTextView().SetText(`
+   ___________ ____    __
+  / ____/ ___// __ \  / /
+ / /    \__ \/ / / / / /
+/ /___ ___/ / /_/ / / /___
+\____//____/\___\_\/_____/`)
+		keyLegend := tview.NewTextView().SetText(`(q) quit
+(a) add instance
+(enter) select`)
+
+		header := tview.NewFlex().
+			AddItem(keyLegend, 0, 1, false).
+			AddItem(tview.NewBox(), 0, 2, true).
+			AddItem(logo, 28, 0, false)
+
+		mainFlex := tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(header, 6, 0, false).
+			AddItem(flex, 0, 1, true)
+
+
 		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Rune() {
 			case 'q':
@@ -84,7 +104,7 @@ func main() {
 		})
 
 		pages = tview.NewPages().
-			AddPage("mainTable", flex, true, true)
+			AddPage("main", mainFlex, true, true)
 			//AddPage("userModal", centeredModal(modalFlex, 60, 20), true, true)
 
 		//app.SetRoot(pages, true).SetFocus(userTable)
