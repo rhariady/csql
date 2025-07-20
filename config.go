@@ -22,10 +22,10 @@ const (
 
 type InstanceConfig struct {
 	Name      string `toml:"name"`
-	ProjectID string `toml:"project_id"`
 	Host      string `toml:"host"`
 	Source    SourceType `toml:"source"`
 	Users     map[string]UserConfig
+	Params    map[string]interface{} `toml:"params"`
 }
 
 type UserConfig struct {

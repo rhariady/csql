@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -41,16 +40,18 @@ func main() {
 			SetSelectable(true, false)
 
 		// Populate the table with database instances
-		databaseInstanceList.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false)).
-			SetCell(0, 1, tview.NewTableCell("Project ID").SetSelectable(false)).
-			SetCell(0, 2, tview.NewTableCell("Host").SetSelectable(false))
+		databaseInstanceList.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
+			SetCell(0, 1, tview.NewTableCell("Project ID").SetExpansion(1).SetSelectable(false)).
+			SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false))
 
 		databaseInstanceList.SetWrapSelection(true, true)
 
 		row := 1
 		for name, instance := range config.Instances {
 			databaseInstanceList.SetCell(row, 0, tview.NewTableCell(name))
-			databaseInstanceList.SetCell(row, 1, tview.NewTableCell(instance.ProjectID))
+			if instance.Source == GCP {
+				databaseInstanceList.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
+			}
 			databaseInstanceList.SetCell(row, 2, tview.NewTableCell(instance.Host))
 			row++
 		}
@@ -67,7 +68,7 @@ func main() {
 		// Set input capture for 'a' key to trigger the same selection logic
 		databaseInstanceList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'a' {
-				discoverDatabases(app, pages)
+				discoverDatabases(app, pages, databaseInstanceList)
 				return nil // Consume the event
 			}
 			return event
@@ -197,7 +198,7 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 	databaseTable.SetCell(1, 0, tview.NewTableCell("Loading databases..."))
 
 	// Get databases
-	projectID := config.Instances[instanceName].ProjectID
+	projectID := config.Instances[instanceName].Params["project_id"].(string)
 	ctx := context.Background()
 
 
@@ -389,58 +390,48 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 	app.SetFocus(form)
 }
 
-func discoverDatabases(app *tview.Application, pages *tview.Pages) {
+func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInstanceList *tview.Table) {
 	var form *tview.Form
-	source := tview.NewDropDown().
+	sourceDropDown := tview.NewDropDown().
 		SetLabel("Source").
-
 		SetListStyles(tcell.StyleDefault.Background(tcell.ColorNone), tcell.StyleDefault.Background(tcell.ColorGrey)).
 		SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
 		SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
-	source.AddOption("Manual", func() {
+	sourceDropDown.AddOption("Manual", func() {
 		for form.GetFormItemCount() > 1 {
 			form.RemoveFormItem(1)
 		}
-
 		form.AddInputField("Name", "", 0, nil, nil)
 		form.AddInputField("Host", "", 0, nil, nil)
 		form.AddInputField("Port", "", 0, nil, nil)
 	})
 
-	source.AddOption("GCP (Auto Discovery)", func() {
+	sourceDropDown.AddOption("GCP (Auto Discovery)", func() {
 		for form.GetFormItemCount() > 1 {
 			form.RemoveFormItem(1)
 		}
-
 		form.AddInputField("Project ID", "", 0, nil, nil)
 	})
 
 	form = tview.NewForm().
-		// AddDropDown("Select Discovery Source", []string{"GCP", "AWS", "Azure", "Manual (VM)"}, 0, nil).
-		// AddInputField("GCP Project ID", "", 20, nil, nil).
-		AddFormItem(source).
+		AddFormItem(sourceDropDown).
 		AddButton("Add", func() {
-			pages.RemovePage("addInstanceModal")
-			_, source := form.GetFormItem(0).(*tview.DropDown).GetCurrentOption()
+			pages.RemovePage("discover-modal")
+			_, selectedSource := sourceDropDown.GetCurrentOption()
 
-			if source == "GCP (Auto Discovery)" {
-				// projectId := form.GetFormItem(1).(*tview.InputField).GetText()
-				// app.QueueUpdateDraw(func(){
-				// 	loading := tview.NewModal().
-				// 		SetText("Discovering instances...")
-				// 	pages.AddPage("loading-discovery", loading, true, true)
-				// 	app.Stop()
-				// })
+			if selectedSource == "GCP (Auto Discovery)" {
+				projectId := form.GetFormItem(1).(*tview.InputField).GetText()
 				loading := tview.NewModal().
-						SetText("Discovering instances...")
+					SetText("Discovering instances...")
 				pages.AddPage("loading-discovery", loading, true, true)
 
 				go func() {
-					app.QueueUpdateDraw(func(){
-						time.Sleep(5 * time.Second)
-						//ctx := context.Background()
-						//DiscoverInstances(config, ctx, projectId)
+					ctx := context.Background()
+					DiscoverInstances(config, ctx, projectId)
+					config.WriteConfig()
+					app.QueueUpdateDraw(func() {
+						time.Sleep(1 * time.Second)
 						pages.RemovePage("loading-discovery")
 						newInstances := tview.NewModal().
 							SetText("New instances has been added...").
@@ -449,73 +440,77 @@ func discoverDatabases(app *tview.Application, pages *tview.Pages) {
 								pages.RemovePage("new-instances")
 							})
 						pages.AddPage("new-instances", newInstances, true, true)
+						refreshInstanceTable(databaseInstanceList)
 					})
 				}()
-			} else if source == "Manual" {
-				loading := tview.NewModal().
-					SetText("Configuring instance(s)...")
-				pages.AddPage("configuring-instances", loading, true, true)
+			} else if selectedSource == "Manual" {
+				instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
+				host := form.GetFormItem(2).(*tview.InputField).GetText()
+				portStr := form.GetFormItem(3).(*tview.InputField).GetText()
 
-				go func() {
-					instance_name := form.GetFormItem(1).(*tview.InputField).GetText()
-					// instance_host := form.GetFormItem(1).(*tview.InputField).GetText()
-					// instance_port := form.GetFormItem(1).(*tview.InputField).GetText()
-					app.QueueUpdateDraw(func(){
-						time.Sleep(5 * time.Second)
-						//ctx := context.Background()
-						//DiscoverInstances(config, ctx, projectId)
-						pages.RemovePage("configuring-instances")
-						new_instances := []string{instance_name}
-						new_instances_string := strings.Join(new_instances, "\n")
-						newInstances := tview.NewModal().
-							SetText("New instances has been added:\n" + new_instances_string).
-							AddButtons([]string{"OK"}).
-							SetDoneFunc(func (buttonIndex int, buttonLabel string){
-								pages.RemovePage("instances-configured")
-							})
-						pages.AddPage("instances-configured", newInstances, true, true)
-					})
-				}()
-			} else {
-				app.Stop()
-				fmt.Println(source, "discovery not yet implemented.")
+				newInstance := InstanceConfig{
+					Name:   instanceName,
+					Host:   host,
+					Source: Manual,
+					Params: map[string]interface{}{
+						"port": portStr,
+					},
+				}
+				config.AddInstance(instanceName, newInstance)
+				config.WriteConfig()
+				refreshInstanceTable(databaseInstanceList)
 			}
 		}).
 		AddButton("Cancel", func() {
-			pages.RemovePage("addInstanceModal")
+			pages.RemovePage("discover-modal")
 		})
 
 	form.SetBorder(true).SetTitle("Add New Instance(s)")
-	// form.SetFieldBackgroundColor(tcell.ColorDarkGreen)
-	fieldStyle := tcell.StyleDefault.
-		Background(tcell.ColorGrey).
-		Blink(true).
-		Underline(tcell.ColorWhite)
-	form.SetFieldStyle(fieldStyle)
+	form.SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey).Blink(true).Underline(tcell.ColorWhite))
 	form.SetLabelColor(tcell.ColorDarkGreen)
 	form.SetTitleColor(tcell.ColorDarkGreen)
 
-	source.SetCurrentOption(0)
+	sourceDropDown.SetCurrentOption(0)
 
 	modal := centeredModal(form, 0, 0)
-	pages.AddPage("addInstanceModal", modal, true, true)
+	pages.AddPage("discover-modal", modal, true, true)
 	app.SetFocus(form)
 }
 
+func refreshInstanceTable(table *tview.Table) {
+	table.Clear()
+	table.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 1, tview.NewTableCell("Project ID").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false))
+
+	row := 1
+	for name, instance := range config.Instances {
+		table.SetCell(row, 0, tview.NewTableCell(name))
+		if instance.Source == GCP {
+			table.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
+		} else {
+			table.SetCell(row, 1, tview.NewTableCell("N/A"))
+		}
+		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
+		row++
+	}
+}
+
 func DiscoverInstances(config *Config, ctx context.Context, projectId string) {
-	fmt.Printf("Project %v\n", projectId)
 	instances, err := ListInstances(ctx, projectId)
 	if err != nil {
 		panic(err)
 	}
 
 	for _, instance := range instances {
-		fmt.Printf("Found an Instance %v: \n", instance.Name, instance)
 		newInstance := InstanceConfig{
-			Name:      instance.Name,
-			ProjectID: projectId,
-			Host:      instance.IpAddresses[0].IpAddress,
-			Source:    GCP,
+			Name:   instance.Name,
+			Host:   instance.IpAddresses[0].IpAddress,
+			Source: GCP,
+			Users: map[string]UserConfig{},
+			Params: map[string]interface{}{
+				"project_id": projectId,
+			},
 		}
 		config.AddInstance(instance.Name, newInstance)
 	}
