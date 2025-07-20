@@ -7,9 +7,9 @@ import (
 	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
+	vault "github.com/hashicorp/vault/api"
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
-	vault "github.com/hashicorp/vault/api"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 )
 
@@ -102,7 +102,7 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 	userRow := 0
 	for name, user := range config.Instances[instanceName].Users {
 		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
-		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.DefaultAuth)))
+		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.DefaultAuth)).SetExpansion(1))
 		userRow++
 	}
 
@@ -177,43 +177,93 @@ func centeredModal(p tview.Primitive, width, height int) tview.Primitive {
 
 func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
 	var form *tview.Form
-	form = tview.NewForm().
-		AddInputField("Username", "", 20, nil, nil).
-		AddDropDown("Auth Type", []string{"vault"}, 0, nil).
-		AddInputField("Vault Address", "", 40, nil, nil).
-		AddInputField("Vault Mount Path", "", 40, nil, nil).
-		AddInputField("Vault Secret Path", "", 40, nil, nil).
-		AddInputField("Vault Secret Key", "", 40, nil, nil).
-		AddButton("Add User", func() {
-			username := form.GetFormItem(0).(*tview.InputField).GetText()
-			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
-			vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
-			vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
-			vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
-			vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+	auth_type := tview.NewDropDown().
+		SetLabel("Auth Type").
+		SetListStyles(tcell.StyleDefault.Background(tcell.ColorNone), tcell.StyleDefault.Background(tcell.ColorGrey)).
+		SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
+		SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
-			if authType == "vault" {
-				newUser := UserConfig{
-					Username: username,
-					DefaultAuth: "vault",
-					Auth: map[string]interface{}{
-						"vault": map[string]string{
-							"address": vaultAddress,
-							"mount_path": vaultMountPath,
-							"secret_path": vaultSecretPath,
-							"secret_key": vaultSecretKey,
-						},
-					},
-				}
-				config.Instances[instanceName].Users[username] = newUser
-				config.WriteConfig()
-			}
+		//SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
+
+
+	auth_type.AddOption("local", func() {
+		for form.GetFormItemCount() > 2 {
+			form.RemoveFormItem(2)
+		}
+
+		form.AddInputField("Password", "", 0, nil, nil)
+	})
+
+	auth_type.AddOption("vault", func() {
+		item_count := form.GetFormItemCount()
+		for i := 2; i < item_count; i++ {
+			form.RemoveFormItem(i)
+		}
+
+		form.
+			AddInputField("Vault Address", "", 0, nil, nil).
+			AddInputField("Vault Mount Path", "", 0, nil, nil).
+			AddInputField("Vault Secret Path", "", 0, nil, nil).
+			AddInputField("Vault Secret Key", "", 0, nil, nil)
+	})
+
+	form = tview.NewForm().
+		AddInputField("Username", "", 0, nil, nil).
+		AddFormItem(auth_type).
+		AddButton("Add User", func() {
+			// username := form.GetFormItem(0).(*tview.InputField).GetText()
+			// _, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
+			// vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
+			// vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
+			// vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
+			// vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+
+			// if authType == "vault" {
+			// 	newUser := UserConfig{
+			// 		Username:    username,
+			// 		DefaultAuth: "vault",
+			// 		Auth: map[string]interface{}{
+			// 			"vault": map[string]string{
+			// 				"address":     vaultAddress,
+			// 				"mount_path":  vaultMountPath,
+			// 				"secret_path": vaultSecretPath,
+			// 				"secret_key":  vaultSecretKey,
+			// 			},
+			// 		},
+			// 	}
+			// 	config.Instances[instanceName].Users[username] = newUser
+			// 	config.WriteConfig()
+			// }
+			pages.RemovePage("addUserModal")
+			pages.RemovePage("userSelectionModal")
 			showUserSelection(app, pages, mainTable, instanceName)
 		}).
 		AddButton("Cancel", func() {
-			showUserSelection(app, pages, mainTable, instanceName)
+			pages.RemovePage("addUserModal")
 		})
-	app.SetRoot(form, true)
+
+	form.SetBorder(true).SetTitle("Add New User")
+	// form.SetFieldBackgroundColor(tcell.ColorDarkGreen)
+	fieldStyle := tcell.StyleDefault.
+		Background(tcell.ColorGrey).
+		Blink(true).
+		Underline(tcell.ColorWhite)
+	form.SetFieldStyle(fieldStyle)
+	form.SetLabelColor(tcell.ColorDarkGreen)
+	form.SetTitleColor(tcell.ColorDarkGreen)
+
+	auth_type.SetCurrentOption(0)
+
+	modal := tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(form, 0, 1, true).
+			AddItem(nil, 0, 1, false), 0, 1, false).
+		AddItem(nil, 0, 1, false)
+
+	pages.AddPage("addUserModal", modal, true, true)
+	app.SetFocus(form)
 }
 
 func discoverDatabases() {
