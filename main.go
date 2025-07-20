@@ -515,6 +515,7 @@ func DiscoverInstances(config *Config, ctx context.Context, projectId string) {
 			Name:      instance.Name,
 			ProjectID: projectId,
 			Host:      instance.IpAddresses[0].IpAddress,
+			Source:    GCP,
 		}
 		config.AddInstance(instance.Name, newInstance)
 	}

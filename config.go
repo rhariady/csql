@@ -13,11 +13,19 @@ type Config struct {
 	Instances map[string]InstanceConfig
 }
 
+type SourceType string
+
+const (
+	Manual SourceType = "Manual"
+	GCP    SourceType = "GCP"
+)
+
 type InstanceConfig struct {
-	Name string `toml:"name"`
+	Name      string `toml:"name"`
 	ProjectID string `toml:"project_id"`
-	Host string `toml:"host"`
-	Users map[string]UserConfig
+	Host      string `toml:"host"`
+	Source    SourceType `toml:"source"`
+	Users     map[string]UserConfig
 }
 
 type UserConfig struct {
