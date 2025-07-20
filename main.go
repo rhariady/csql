@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
 	vault "github.com/hashicorp/vault/api"
+	_ "github.com/lib/pq"
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
@@ -70,7 +72,7 @@ func main() {
 		})
 
 		flex := tview.NewFlex().AddItem(databaseInstanceList, 0, 1, true)
-		flex.SetBorder(true).SetTitle("Databases")
+		flex.SetBorder(true).SetTitle("Instances")
 
 		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			switch event.Rune() {
@@ -113,28 +115,7 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 		}
 	}).SetSelectedFunc(func(row int, column int) {
 		userName := userTable.GetCell(row, 0).Text
-		app.Stop()
-		user := config.Instances[instanceName].Users[userName].Username
-		host := config.Instances[instanceName].Host
-		port := 5432
-		dbname := "postgres"
-
-		authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
-		if err != nil {
-			panic(err)
-		}
-
-		password := authConfig.GetCredential()
-		connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbname)
-
-		fmt.Println("Connecting to:", connectionUri)
-		cmd := exec.Command("psql", connectionUri)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Error:", err)
-		}
+		showDatabaseList(app, pages, instanceName, userName, userTable)
 	})
 
 	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -162,6 +143,97 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 		}
 		return event
 	})
+}
+
+func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName string, userName string, userTable *tview.Table) {
+	// Table for databases
+	databaseTable := tview.NewTable().
+		SetBorders(false).
+		SetSelectable(true, false)
+
+	databaseTable.SetCell(0, 0, tview.NewTableCell("Name").SetSelectable(false))
+	databaseTable.SetCell(0, 1, tview.NewTableCell("Owner").SetSelectable(false))
+	databaseTable.SetCell(0, 2, tview.NewTableCell("Encoding").SetSelectable(false))
+	databaseTable.SetCell(0, 3, tview.NewTableCell("Collate").SetSelectable(false))
+	databaseTable.SetCell(0, 4, tview.NewTableCell("Ctype").SetSelectable(false))
+	databaseTable.SetCell(0, 5, tview.NewTableCell("Access Privileges").SetSelectable(false))
+	databaseTable.SetCell(1, 0, tview.NewTableCell("Loading databases..."))
+
+	// Get databases
+	projectID := config.Instances[instanceName].ProjectID
+	ctx := context.Background()
+
+
+	go func() {
+		databases, err := ListDatabases(ctx, projectID, instanceName, userName)
+		if err != nil {
+			// Show an error modal
+			errorModal := tview.NewModal().
+				SetText(fmt.Sprintf("Error loading databases: %v", err)).
+				AddButtons([]string{"OK"}).
+				SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+					pages.RemovePage("errorModal")
+					app.SetFocus(userTable)
+				})
+			pages.AddPage("errorModal", errorModal, true, true)
+			app.SetFocus(errorModal)
+		}
+		
+		// Populate table
+		for i, db := range databases {
+			databaseTable.SetCell(i+1, 0, tview.NewTableCell(db.Name))
+			databaseTable.SetCell(i+1, 1, tview.NewTableCell(db.Owner))
+			databaseTable.SetCell(i+1, 2, tview.NewTableCell(db.Encoding))
+			databaseTable.SetCell(i+1, 3, tview.NewTableCell(db.Collate))
+			databaseTable.SetCell(i+1, 4, tview.NewTableCell(db.Ctype))
+			databaseTable.SetCell(i+1, 5, tview.NewTableCell(db.AccessPrivileges))
+		}
+
+		// On selection, connect to DB
+		databaseTable.SetSelectedFunc(func(row int, column int) {
+			if row == 0 { // Skip header
+				return
+			}
+			dbName := databaseTable.GetCell(row, 0).Text
+			app.Stop() // Stop the tview app to hand over to psql
+
+			user := config.Instances[instanceName].Users[userName].Username
+			host := config.Instances[instanceName].Host
+			port := 5432
+
+			authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+			if err != nil {
+				panic(err)
+			}
+
+			password := authConfig.GetCredential()
+			connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbName)
+
+			fmt.Println("Connecting to:", connectionUri)
+			cmd := exec.Command("psql", connectionUri)
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				fmt.Println("Error:", err)
+			}
+		})
+
+		app.Draw()
+	}()
+	
+	flex := tview.NewFlex().AddItem(databaseTable, 0, 1, true)
+	flex.SetBorder(true).SetTitle("Databases")
+
+	// Go back on escape
+	databaseTable.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			pages.SwitchToPage("mainTable")
+		}
+	})
+
+	pages.AddPage("databaseTable", flex, true, true)
+	app.SetFocus(databaseTable)
 }
 
 // Helper function to center a primitive
@@ -354,6 +426,84 @@ func ListInstances(ctx context.Context, projectId string) ([]*sqladmin.DatabaseI
 		return nil, err
 	}
 	return instances.Items, nil
+}
+
+type DatabaseRecord struct {
+	Name string
+	Owner string
+	Encoding string
+	Collate string
+	Ctype string
+	AccessPrivileges string
+}
+
+func ListDatabases(ctx context.Context, projectID string, instanceName string, userName string) ([]DatabaseRecord, error) {
+	user := config.Instances[instanceName].Users[userName].Username
+	host := config.Instances[instanceName].Host
+	port := 5432
+	dbname := "postgres" // Connect to a default database to list others
+
+	authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+	if err != nil {
+		return nil, err
+	}
+
+	password := authConfig.GetCredential()
+	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user, password, host, port, dbname)
+
+	db, err := sql.Open("postgres", connectionUri)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
+	rows, err := db.QueryContext(ctx, `SELECT
+  d.datname AS "Name",
+  pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
+  pg_catalog.pg_encoding_to_char(d.encoding) AS "Encoding",
+  d.datcollate AS "Collate",
+  d.datctype AS "Ctype",
+  pg_catalog.array_to_string(d.datacl, E'\n') AS "Access privileges"
+FROM
+  pg_catalog.pg_database d
+WHERE
+  datistemplate = false
+ORDER BY
+  d.datname;`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var databases []DatabaseRecord
+	for rows.Next() {
+		var name string
+		var owner string
+		var encoding string
+		var collate string
+		var ctype string
+		var accessPrivileges sql.NullString
+		if err := rows.Scan(&name, &owner, &encoding, &collate, &ctype, &accessPrivileges); err != nil {
+			return nil, err
+		}
+
+		database := DatabaseRecord{
+			Name: name,
+			Owner: owner,
+			Encoding: encoding,
+			Collate: collate,
+			Ctype: ctype,
+		}
+
+		if accessPrivileges.Valid {
+			database.AccessPrivileges = accessPrivileges.String
+		}
+		databases = append(databases, database)
+	}
+
+	return databases, nil
 }
 
 func getPasswordFromVault(address string, mount_path string, secret_path string, secret_key string) (string, error) {
