@@ -211,29 +211,43 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 		AddInputField("Username", "", 0, nil, nil).
 		AddFormItem(auth_type).
 		AddButton("Add User", func() {
-			// username := form.GetFormItem(0).(*tview.InputField).GetText()
-			// _, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
-			// vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
-			// vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
-			// vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
-			// vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+			username := form.GetFormItem(0).(*tview.InputField).GetText()
+			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
 
-			// if authType == "vault" {
-			// 	newUser := UserConfig{
-			// 		Username:    username,
-			// 		DefaultAuth: "vault",
-			// 		Auth: map[string]interface{}{
-			// 			"vault": map[string]string{
-			// 				"address":     vaultAddress,
-			// 				"mount_path":  vaultMountPath,
-			// 				"secret_path": vaultSecretPath,
-			// 				"secret_key":  vaultSecretKey,
-			// 			},
-			// 		},
-			// 	}
-			// 	config.Instances[instanceName].Users[username] = newUser
-			// 	config.WriteConfig()
-			// }
+			var newUser UserConfig
+			if authType == "vault" {
+				vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
+				vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
+				vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
+				vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+				newUser = UserConfig{
+					Username:    username,
+					DefaultAuth: "vault",
+					Auth: map[string]interface{}{
+						"vault": map[string]string{
+							"address":     vaultAddress,
+							"mount_path":  vaultMountPath,
+							"secret_path": vaultSecretPath,
+							"secret_key":  vaultSecretKey,
+						},
+					},
+				}
+			} else if authType == "local" {
+				password := form.GetFormItem(2).(*tview.InputField).GetText()
+				newUser = UserConfig{
+					Username:    username,
+					DefaultAuth: "local",
+					Auth: map[string]interface{}{
+						"local": map[string]string{
+							"password": password,
+						},
+					},
+				}
+			}
+
+			config.Instances[instanceName].Users[username] = newUser
+			config.WriteConfig()
+
 			pages.RemovePage("addUserModal")
 			pages.RemovePage("userSelectionModal")
 			showUserSelection(app, pages, mainTable, instanceName)

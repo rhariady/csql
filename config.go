@@ -27,6 +27,14 @@ type UserConfig struct {
 	Auth map[string]interface{} `toml:"Auth"`
 }
 
+type LocalAuthConfig struct {
+	Password string `toml:"password"`
+}
+
+func (l LocalAuthConfig) GetCredential() string {
+	return l.Password
+}
+
 func NewAuthConfig(authType string, authMap map[string]interface{}) (AuthConfig, error) {
 	switch authType {
 	case "vault":
@@ -40,6 +48,17 @@ func NewAuthConfig(authType string, authMap map[string]interface{}) (AuthConfig,
 			return nil, err
 		}
 		return vaultAuthConfig, nil
+	case "local":
+		var buf bytes.Buffer
+		if err := toml.NewEncoder(&buf).Encode(authMap["local"]); err != nil {
+			return nil, err
+		}
+		authConfigData := buf.String()
+		var localAuthConfig LocalAuthConfig
+		if _, err := toml.Decode(authConfigData, &localAuthConfig); err != nil {
+			return nil, err
+		}
+		return localAuthConfig, nil
   default:
 		return nil, errors.New("AuthTypeNotFound")
 	}
