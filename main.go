@@ -41,19 +41,7 @@ func main() {
 			SetBorders(false).
 			SetSelectable(true, false)
 
-		// Populate the table with database instances
-		databaseInstanceList.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
-			SetCell(0, 1, tview.NewTableCell("Project ID").SetExpansion(1).SetSelectable(false)).
-			SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false))
-
-		databaseInstanceList.SetWrapSelection(true, true)
-
-		row := 1
-		for name, instance := range cfg.Instances {
-			databaseInstanceList.SetCell(row, 0, tview.NewTableCell(name))
-			databaseInstanceList.SetCell(row, 2, tview.NewTableCell(instance.Host))
-			row++
-		}
+		refreshInstanceTable(databaseInstanceList)
 
 		// Set the selected function for the table (triggered by Enter key)
 		databaseInstanceList.SetSelectedFunc(func(row int, column int) {
@@ -67,7 +55,7 @@ func main() {
 		// Set input capture for 'a' key to trigger the same selection logic
 		databaseInstanceList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 			if event.Rune() == 'a' {
-				discoverDatabases(app, pages, databaseInstanceList)
+				showAddDatabasesForm(app, pages, databaseInstanceList)
 				return nil // Consume the event
 			}
 			return event
@@ -387,7 +375,7 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 	app.SetFocus(form)
 }
 
-func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInstanceList *tview.Table) {
+func showAddDatabasesForm(app *tview.Application, pages *tview.Pages, databaseInstanceList *tview.Table) {
 	var form *tview.Form
 	sourceDropDown := tview.NewDropDown().
 		SetLabel("Source").
@@ -453,13 +441,19 @@ func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInsta
 func refreshInstanceTable(table *tview.Table) {
 	table.Clear()
 	table.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
-		SetCell(0, 1, tview.NewTableCell("Project ID").SetExpansion(1).SetSelectable(false)).
-		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false))
+		SetCell(0, 1, tview.NewTableCell("Type").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 4, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
 
+	table.SetWrapSelection(true, true)
 	row := 1
 	for name, instance := range cfg.Instances {
 		table.SetCell(row, 0, tview.NewTableCell(name))
+		table.SetCell(row, 1, tview.NewTableCell(instance.Type))
 		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
+		table.SetCell(row, 3, tview.NewTableCell(fmt.Sprint(instance.Port)))
+		table.SetCell(row, 4, tview.NewTableCell(fmt.Sprint(instance.Params)))
 		row++
 	}
 }
