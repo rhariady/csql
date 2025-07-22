@@ -15,6 +15,8 @@ type Config struct {
 type InstanceConfig struct {
 	Name      string `toml:"name"`
 	Host      string `toml:"host"`
+	Port      int `toml:"port"`
+	Type      string `toml:"type"`
 	Users     map[string]UserConfig
 	Params    map[string]interface{} `toml:"params"`
 }

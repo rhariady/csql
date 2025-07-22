@@ -2,6 +2,8 @@ package discovery
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 
@@ -37,17 +39,19 @@ func NewManualDiscovery(name, host string, port int) *ManualDiscovery {
 }
 
 func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form) {
-	instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
-	host := form.GetFormItem(2).(*tview.InputField).GetText()
-	portStr := form.GetFormItem(3).(*tview.InputField).GetText()
+	_, databaseType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
+	instanceName := form.GetFormItem(2).(*tview.InputField).GetText()
+	host := form.GetFormItem(3).(*tview.InputField).GetText()
+	port, _ := strconv.Atoi(form.GetFormItem(4).(*tview.InputField).GetText())
 	
 	newInstance := config.InstanceConfig{
 		Name:   instanceName,
 		Host:   host,
+		Port:   port,
+		Type:   databaseType,
 		Users: map[string]config.UserConfig{},
 		Params: map[string]interface{}{
 			"discovery": string(Manual),
-			"port": portStr,
 		},
 	}
 	cfg.AddInstance(instanceName, newInstance)
@@ -62,9 +66,10 @@ func (d *ManualDiscovery) GetInstanceType() string {
 }
 
 func (d *ManualDiscovery) GetOptionField(form *tview.Form) {
-		form.AddInputField("Name", "", 0, nil, nil)
-		form.AddInputField("Host", "", 0, nil, nil)
-		form.AddInputField("Port", "", 0, nil, nil)
+	form.AddDropDown("Database Type", []string{"PostgreSQL"}, 0, nil)
+	form.AddInputField("Name", "", 0, nil, nil)
+	form.AddInputField("Host", "", 0, nil, nil)
+	form.AddInputField("Port", "", 0, nil, nil)
 }
 
 
@@ -82,11 +87,21 @@ func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form)
 	if err != nil {
 		panic(err)
 	}
-
 	for _, instance := range instances {
+		var databaseType string
+		var port int
+		if strings.HasPrefix(instance.DatabaseInstalledVersion, "POSTGRES") {
+			databaseType = "PostgreSQL"
+			port = 5432
+		} else if strings.HasPrefix(instance.DatabaseInstalledVersion, "MYSQL") {
+			databaseType = "MySQL"
+			port = 3306
+		}
 		newInstance := config.InstanceConfig{
 			Name:   instance.Name,
 			Host:   instance.IpAddresses[0].IpAddress,
+			Port:   port,
+			Type:   databaseType,
 			Users: map[string]config.UserConfig{},
 			Params: map[string]interface{}{
 				"discovery": string(GCP),
