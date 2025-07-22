@@ -1,4 +1,4 @@
-module example.com/gomod2nix-template
+module github.com/rhariady/csql
 
 go 1.23.0
 

@@ -9,22 +9,24 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	vault "github.com/hashicorp/vault/api"
 	_ "github.com/lib/pq"
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
-	sqladmin "google.golang.org/api/sqladmin/v1beta4"
+
+	"github.com/rhariady/csql/pkg/config"
+	"github.com/rhariady/csql/pkg/auth"
+	"github.com/rhariady/csql/pkg/discovery"
 )
 
-var config *Config
+var cfg *config.Config
 
 func main() {
 	var app *tview.Application
 	var pages *tview.Pages
 
-	CheckConfigFile()
+	config.CheckConfigFile()
 	var err error
-	config, err = GetConfig()
+	cfg, err = config.GetConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -47,9 +49,9 @@ func main() {
 		databaseInstanceList.SetWrapSelection(true, true)
 
 		row := 1
-		for name, instance := range config.Instances {
+		for name, instance := range cfg.Instances {
 			databaseInstanceList.SetCell(row, 0, tview.NewTableCell(name))
-			if instance.Source == GCP {
+			if instance.Source == discovery.GCP {
 				databaseInstanceList.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
 			}
 			databaseInstanceList.SetCell(row, 2, tview.NewTableCell(instance.Host))
@@ -112,14 +114,14 @@ func main() {
 			AddItem(flex, 0, 1, true)
 
 
-		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Rune() {
-			case 'q':
-				app.Stop()
-				return nil
-			}
-			return event
-		})
+		// app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// 	switch event.Rune() {
+		// 	case 'q':
+		// 		app.Stop()
+		// 		return nil
+		// 	}
+		// 	return event
+		// })
 
 		pages = tview.NewPages().
 			AddPage("main", mainFlex, true, true)
@@ -140,7 +142,7 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 		SetSelectable(true, false)
 
 	userRow := 0
-	for name, user := range config.Instances[instanceName].Users {
+	for name, user := range cfg.Instances[instanceName].Users {
 		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
 		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.DefaultAuth)).SetExpansion(1))
 		userRow++
@@ -198,12 +200,10 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 	databaseTable.SetCell(1, 0, tview.NewTableCell("Loading databases..."))
 
 	// Get databases
-	projectID := config.Instances[instanceName].Params["project_id"].(string)
-	ctx := context.Background()
-
+	projectID := cfg.Instances[instanceName].Params["project_id"].(string)
 
 	go func() {
-		databases, err := ListDatabases(ctx, projectID, instanceName, userName)
+		databases, err := ListDatabases(projectID, instanceName, userName)
 		if err != nil {
 			// Show an error modal
 			errorModal := tview.NewModal().
@@ -235,11 +235,11 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 			dbName := databaseTable.GetCell(row, 0).Text
 			app.Stop() // Stop the tview app to hand over to psql
 
-			user := config.Instances[instanceName].Users[userName].Username
-			host := config.Instances[instanceName].Host
+			user := cfg.Instances[instanceName].Users[userName].Username
+			host := cfg.Instances[instanceName].Host
 			port := 5432
 
-			authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+			authConfig, err := auth.NewAuthConfig(cfg.Instances[instanceName].Users[userName].DefaultAuth, cfg.Instances[instanceName].Users[userName].Auth)
 			if err != nil {
 				panic(err)
 			}
@@ -324,13 +324,13 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 			username := form.GetFormItem(0).(*tview.InputField).GetText()
 			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
 
-			var newUser UserConfig
+			var newUser config.UserConfig
 			if authType == "vault" {
 				vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
 				vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
 				vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
 				vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
-				newUser = UserConfig{
+				newUser = config.UserConfig{
 					Username:    username,
 					DefaultAuth: "vault",
 					Auth: map[string]interface{}{
@@ -344,7 +344,7 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 				}
 			} else if authType == "local" {
 				password := form.GetFormItem(2).(*tview.InputField).GetText()
-				newUser = UserConfig{
+				newUser = config.UserConfig{
 					Username:    username,
 					DefaultAuth: "local",
 					Auth: map[string]interface{}{
@@ -355,8 +355,8 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 				}
 			}
 
-			config.Instances[instanceName].Users[username] = newUser
-			config.WriteConfig()
+			cfg.Instances[instanceName].Users[username] = newUser
+			cfg.WriteConfig()
 
 			pages.RemovePage("addUserModal")
 			pages.RemovePage("userSelectionModal")
@@ -427,9 +427,10 @@ func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInsta
 				pages.AddPage("loading-discovery", loading, true, true)
 
 				go func() {
-					ctx := context.Background()
-					DiscoverInstances(config, ctx, projectId)
-					config.WriteConfig()
+
+					gcp := discovery.NewGCPDiscovery(projectId)
+					gcp.DiscoverInstances(cfg)
+					cfg.WriteConfig()
 					app.QueueUpdateDraw(func() {
 						time.Sleep(1 * time.Second)
 						pages.RemovePage("loading-discovery")
@@ -448,16 +449,16 @@ func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInsta
 				host := form.GetFormItem(2).(*tview.InputField).GetText()
 				portStr := form.GetFormItem(3).(*tview.InputField).GetText()
 
-				newInstance := InstanceConfig{
+				newInstance := config.InstanceConfig{
 					Name:   instanceName,
 					Host:   host,
-					Source: Manual,
+					Source: discovery.Manual,
 					Params: map[string]interface{}{
 						"port": portStr,
 					},
 				}
-				config.AddInstance(instanceName, newInstance)
-				config.WriteConfig()
+				cfg.AddInstance(instanceName, newInstance)
+				cfg.WriteConfig()
 				refreshInstanceTable(databaseInstanceList)
 			}
 		}).
@@ -484,9 +485,9 @@ func refreshInstanceTable(table *tview.Table) {
 		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false))
 
 	row := 1
-	for name, instance := range config.Instances {
+	for name, instance := range cfg.Instances {
 		table.SetCell(row, 0, tview.NewTableCell(name))
-		if instance.Source == GCP {
+		if instance.Source == discovery.GCP {
 			table.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
 		} else {
 			table.SetCell(row, 1, tview.NewTableCell("N/A"))
@@ -494,39 +495,6 @@ func refreshInstanceTable(table *tview.Table) {
 		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
 		row++
 	}
-}
-
-func DiscoverInstances(config *Config, ctx context.Context, projectId string) {
-	instances, err := ListInstances(ctx, projectId)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, instance := range instances {
-		newInstance := InstanceConfig{
-			Name:   instance.Name,
-			Host:   instance.IpAddresses[0].IpAddress,
-			Source: GCP,
-			Users: map[string]UserConfig{},
-			Params: map[string]interface{}{
-				"project_id": projectId,
-			},
-		}
-		config.AddInstance(instance.Name, newInstance)
-	}
-}
-
-func ListInstances(ctx context.Context, projectId string) ([]*sqladmin.DatabaseInstance, error) {
-	service, err := sqladmin.NewService(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	instances, err := service.Instances.List(projectId).Do()
-	if err != nil {
-		return nil, err
-	}
-	return instances.Items, nil
 }
 
 type DatabaseRecord struct {
@@ -538,13 +506,13 @@ type DatabaseRecord struct {
 	AccessPrivileges string
 }
 
-func ListDatabases(ctx context.Context, projectID string, instanceName string, userName string) ([]DatabaseRecord, error) {
-	user := config.Instances[instanceName].Users[userName].Username
-	host := config.Instances[instanceName].Host
+func ListDatabases(projectID string, instanceName string, userName string) ([]DatabaseRecord, error) {
+	user := cfg.Instances[instanceName].Users[userName].Username
+	host := cfg.Instances[instanceName].Host
 	port := 5432
 	dbname := "postgres" // Connect to a default database to list others
 
-	authConfig, err := NewAuthConfig(config.Instances[instanceName].Users[userName].DefaultAuth, config.Instances[instanceName].Users[userName].Auth)
+	authConfig, err := auth.NewAuthConfig(cfg.Instances[instanceName].Users[userName].DefaultAuth, cfg.Instances[instanceName].Users[userName].Auth)
 	if err != nil {
 		return nil, err
 	}
@@ -559,6 +527,7 @@ func ListDatabases(ctx context.Context, projectID string, instanceName string, u
 	defer db.Close()
 
 	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
+	ctx := context.Background()
 	rows, err := db.QueryContext(ctx, `SELECT
   d.datname AS "Name",
   pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
@@ -605,29 +574,4 @@ ORDER BY
 	}
 
 	return databases, nil
-}
-
-func getPasswordFromVault(address string, mount_path string, secret_path string, secret_key string) (string, error) {
-	config := vault.DefaultConfig()
-	config.Address = address
-
-	client, err := vault.NewClient(config)
-	if err != nil {
-		return "", err
-	}
-
-	secret, err := client.KVv2(mount_path).Get(context.Background(), secret_path)
-	if err != nil {
-		return "", err
-	}
-	if secret == nil {
-		return "", fmt.Errorf("no secret found at path: %s", secret_path)
-	}
-
-	password, ok := secret.Data[secret_key].(string)
-	if !ok {
-		return "", fmt.Errorf("key '%s' not found in secret data", secret_key)
-	}
-
-	return password, nil
 }

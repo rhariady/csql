@@ -1,8 +1,7 @@
-package main
+package config
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"path/filepath"
 
@@ -14,11 +13,6 @@ type Config struct {
 }
 
 type SourceType string
-
-const (
-	Manual SourceType = "Manual"
-	GCP    SourceType = "GCP"
-)
 
 type InstanceConfig struct {
 	Name      string `toml:"name"`
@@ -33,68 +27,6 @@ type UserConfig struct {
 	// Auth AuthConfig `toml:"auth"`
 	DefaultAuth string `toml:"default_auth"`
 	Auth map[string]interface{} `toml:"Auth"`
-}
-
-type LocalAuthConfig struct {
-	Password string `toml:"password"`
-}
-
-func (l LocalAuthConfig) GetCredential() string {
-	return l.Password
-}
-
-func NewAuthConfig(authType string, authMap map[string]interface{}) (AuthConfig, error) {
-	switch authType {
-	case "vault":
-		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(authMap["vault"]); err != nil {
-			return nil, err
-		}
-		authConfigData := buf.String()
-		var vaultAuthConfig VaultAuthConfig
-		if _, err := toml.Decode(authConfigData, &vaultAuthConfig); err != nil {
-			return nil, err
-		}
-		return vaultAuthConfig, nil
-	case "local":
-		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(authMap["local"]); err != nil {
-			return nil, err
-		}
-		authConfigData := buf.String()
-		var localAuthConfig LocalAuthConfig
-		if _, err := toml.Decode(authConfigData, &localAuthConfig); err != nil {
-			return nil, err
-		}
-		return localAuthConfig, nil
-  default:
-		return nil, errors.New("AuthTypeNotFound")
-	}
-}
-
-type AuthConfig interface{
-	GetCredential() string
-}
-
-type VaultAuthConfig struct {
-	Address string `toml:"address"`
-	MountPath string `toml:"mount_path"`
-	SecretPath string `toml:"secret_path"`
-	SecretKey string `toml:"secret_key"`
-}
-
-func (v VaultAuthConfig) GetCredential() string {
-	vault_address := v.Address
-	vault_mount_path := v.MountPath
-	vault_secret_path := v.SecretPath
-	vault_secret_key := v.SecretKey
-
-	password, err := getPasswordFromVault(vault_address, vault_mount_path, vault_secret_path, vault_secret_key)
-	if err != nil {
-		panic(err)
-	}
-
-	return password
 }
 
 func (c *Config) AddInstance(key string, instanceConfig InstanceConfig) {
