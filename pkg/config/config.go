@@ -12,12 +12,9 @@ type Config struct {
 	Instances map[string]InstanceConfig
 }
 
-type SourceType string
-
 type InstanceConfig struct {
 	Name      string `toml:"name"`
 	Host      string `toml:"host"`
-	Source    SourceType `toml:"source"`
 	Users     map[string]UserConfig
 	Params    map[string]interface{} `toml:"params"`
 }

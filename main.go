@@ -51,9 +51,6 @@ func main() {
 		row := 1
 		for name, instance := range cfg.Instances {
 			databaseInstanceList.SetCell(row, 0, tview.NewTableCell(name))
-			if instance.Source == discovery.GCP {
-				databaseInstanceList.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
-			}
 			databaseInstanceList.SetCell(row, 2, tview.NewTableCell(instance.Host))
 			row++
 		}
@@ -398,69 +395,44 @@ func discoverDatabases(app *tview.Application, pages *tview.Pages, databaseInsta
 		SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
 		SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
-	sourceDropDown.AddOption("Manual", func() {
-		for form.GetFormItemCount() > 1 {
-			form.RemoveFormItem(1)
-		}
-		form.AddInputField("Name", "", 0, nil, nil)
-		form.AddInputField("Host", "", 0, nil, nil)
-		form.AddInputField("Port", "", 0, nil, nil)
-	})
-
-	sourceDropDown.AddOption("GCP (Auto Discovery)", func() {
-		for form.GetFormItemCount() > 1 {
-			form.RemoveFormItem(1)
-		}
-		form.AddInputField("Project ID", "", 0, nil, nil)
-	})
+	for discoveryType, discovery := range discovery.DiscoveryList {
+		sourceDropDown.AddOption(string(discoveryType), func() {
+			for form.GetFormItemCount() > 1 {
+				form.RemoveFormItem(1)
+			}
+			discovery.GetOptionField(form)
+		})
+	}
 
 	form = tview.NewForm().
 		AddFormItem(sourceDropDown).
 		AddButton("Add", func() {
-			pages.RemovePage("discover-modal")
 			_, selectedSource := sourceDropDown.GetCurrentOption()
 
-			if selectedSource == "GCP (Auto Discovery)" {
-				projectId := form.GetFormItem(1).(*tview.InputField).GetText()
-				loading := tview.NewModal().
-					SetText("Discovering instances...")
-				pages.AddPage("loading-discovery", loading, true, true)
+			factory, _ := discovery.DiscoveryList[selectedSource]
+			
+			loading := tview.NewModal().
+				SetText("Discovering instances...")
+			pages.RemovePage("discover-modal")
+			pages.AddPage("loading-discovery", loading, true, true)
 
-				go func() {
+			go func() {
 
-					gcp := discovery.NewGCPDiscovery(projectId)
-					gcp.DiscoverInstances(cfg)
-					cfg.WriteConfig()
-					app.QueueUpdateDraw(func() {
-						time.Sleep(1 * time.Second)
-						pages.RemovePage("loading-discovery")
-						newInstances := tview.NewModal().
-							SetText("New instances has been added...").
-							AddButtons([]string{"OK"}).
-							SetDoneFunc(func (buttonIndex int, buttonLabel string){
-								pages.RemovePage("new-instances")
-							})
-						pages.AddPage("new-instances", newInstances, true, true)
-						refreshInstanceTable(databaseInstanceList)
-					})
-				}()
-			} else if selectedSource == "Manual" {
-				instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
-				host := form.GetFormItem(2).(*tview.InputField).GetText()
-				portStr := form.GetFormItem(3).(*tview.InputField).GetText()
-
-				newInstance := config.InstanceConfig{
-					Name:   instanceName,
-					Host:   host,
-					Source: discovery.Manual,
-					Params: map[string]interface{}{
-						"port": portStr,
-					},
-				}
-				cfg.AddInstance(instanceName, newInstance)
+				factory.DiscoverInstances(cfg, form)
 				cfg.WriteConfig()
-				refreshInstanceTable(databaseInstanceList)
-			}
+				app.QueueUpdateDraw(func() {
+					time.Sleep(1 * time.Second)
+					pages.RemovePage("loading-discovery")
+					newInstances := tview.NewModal().
+						SetText("New instances has been added...").
+						AddButtons([]string{"OK"}).
+						SetDoneFunc(func (buttonIndex int, buttonLabel string){
+							pages.RemovePage("new-instances")
+						})
+					pages.AddPage("new-instances", newInstances, true, true)
+					refreshInstanceTable(databaseInstanceList)
+				})
+			}()
 		}).
 		AddButton("Cancel", func() {
 			pages.RemovePage("discover-modal")
@@ -487,11 +459,6 @@ func refreshInstanceTable(table *tview.Table) {
 	row := 1
 	for name, instance := range cfg.Instances {
 		table.SetCell(row, 0, tview.NewTableCell(name))
-		if instance.Source == discovery.GCP {
-			table.SetCell(row, 1, tview.NewTableCell(instance.Params["project_id"].(string)))
-		} else {
-			table.SetCell(row, 1, tview.NewTableCell("N/A"))
-		}
 		table.SetCell(row, 2, tview.NewTableCell(instance.Host))
 		row++
 	}

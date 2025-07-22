@@ -5,45 +5,52 @@ import (
 
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 
-	"github.com/rhariady/csql/pkg/config"	
+	"github.com/rhariady/csql/pkg/config"
+	"github.com/rivo/tview"
 )
+
+type DiscoveryType = string
 
 const (
-	Manual config.SourceType = "Manual"
-	GCP    config.SourceType = "GCP"
+	Manual  DiscoveryType = "Manual"
+	GCP     DiscoveryType = "GCP (Auto Discovery)"
 )
 
-type Discovery interface{
-	DiscoverInstances(*config.Config)
+var DiscoveryList = map[DiscoveryType]IDiscovery{
+	Manual: &ManualDiscovery{},
+	GCP: &GCPDiscovery{},
+}
+
+type IDiscovery interface{
+	DiscoverInstances(*config.Config, *tview.Form)
 	GetLabel() string
 	GetInstanceType() string
+	GetOptionField(*tview.Form)
 }
 
 type ManualDiscovery struct {
-	name string
-	host string
-	port int
 }
 
 func NewManualDiscovery(name, host string, port int) *ManualDiscovery {
 	return &ManualDiscovery{
-		name: name,
-		host: host,
-		port: port,
 	}
 }
 
-func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config) {
+func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form) {
+	instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
+	host := form.GetFormItem(2).(*tview.InputField).GetText()
+	portStr := form.GetFormItem(3).(*tview.InputField).GetText()
+	
 	newInstance := config.InstanceConfig{
-			Name:   d.name,
-			Host:   d.host,
-			Source: Manual,
-			Users: map[string]config.UserConfig{},
-			Params: map[string]interface{}{
-				"port": d.port,
-			},
+		Name:   instanceName,
+		Host:   host,
+		Users: map[string]config.UserConfig{},
+		Params: map[string]interface{}{
+			"discovery": string(Manual),
+			"port": portStr,
+		},
 	}
-	cfg.AddInstance(d.name, newInstance)
+	cfg.AddInstance(instanceName, newInstance)
 }
 
 func (d *ManualDiscovery) GetLabel() string {
@@ -54,18 +61,24 @@ func (d *ManualDiscovery) GetInstanceType() string {
 	return "manual"
 }
 
+func (d *ManualDiscovery) GetOptionField(form *tview.Form) {
+		form.AddInputField("Name", "", 0, nil, nil)
+		form.AddInputField("Host", "", 0, nil, nil)
+		form.AddInputField("Port", "", 0, nil, nil)
+}
+
+
 type GCPDiscovery struct {
-	projectId string
 }
 
 func NewGCPDiscovery(projectId string) *GCPDiscovery {
 	return &GCPDiscovery{
-		projectId: projectId,
 	}
 }
 
-func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config) {
-	instances, err := listGCPInstances(gcp.projectId)
+func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form) {
+	projectId := form.GetFormItem(1).(*tview.InputField).GetText()
+	instances, err := listGCPInstances(projectId)
 	if err != nil {
 		panic(err)
 	}
@@ -74,10 +87,10 @@ func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config) {
 		newInstance := config.InstanceConfig{
 			Name:   instance.Name,
 			Host:   instance.IpAddresses[0].IpAddress,
-			Source: GCP,
 			Users: map[string]config.UserConfig{},
 			Params: map[string]interface{}{
-				"project_id": gcp.projectId,
+				"discovery": string(GCP),
+				"project_id": projectId,
 			},
 		}
 		cfg.AddInstance(instance.Name, newInstance)
@@ -90,6 +103,10 @@ func (d *GCPDiscovery) GetLabel() string {
 
 func (d *GCPDiscovery) GetInstanceType() string {
 	return "gcp"
+}
+
+func (d *GCPDiscovery) GetOptionField(form *tview.Form) {
+		form.AddInputField("Project ID", "", 0, nil, nil)
 }
 
 func listGCPInstances(projectId string) ([]*sqladmin.DatabaseInstance, error) {
