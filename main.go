@@ -1,11 +1,8 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -14,8 +11,8 @@ import (
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
-	"github.com/rhariady/csql/pkg/auth"
 	"github.com/rhariady/csql/pkg/discovery"
+	"github.com/rhariady/csql/pkg/dbadapter"
 )
 
 var cfg *config.Config
@@ -185,10 +182,10 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 	databaseTable.SetCell(1, 0, tview.NewTableCell("Loading databases..."))
 
 	// Get databases
-	projectID := cfg.Instances[instanceName].Params["project_id"].(string)
-
 	go func() {
-		databases, err := ListDatabases(projectID, instanceName, userName)
+		instance := cfg.Instances[instanceName]
+		dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
+		databases, err := dbAdapter.ListDatabases(&instance, userName)
 		if err != nil {
 			// Show an error modal
 			errorModal := tview.NewModal().
@@ -220,26 +217,11 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 			dbName := databaseTable.GetCell(row, 0).Text
 			app.Stop() // Stop the tview app to hand over to psql
 
-			user := cfg.Instances[instanceName].Users[userName].Username
-			host := cfg.Instances[instanceName].Host
-			port := 5432
+			instance := cfg.Instances[instanceName]
 
-			authConfig, err := auth.NewAuthConfig(cfg.Instances[instanceName].Users[userName].DefaultAuth, cfg.Instances[instanceName].Users[userName].Auth)
-			if err != nil {
-				panic(err)
-			}
+			dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
+			dbAdapter.RunShell(&instance, dbName, userName)
 
-			password := authConfig.GetCredential()
-			connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbName)
-
-			fmt.Println("Connecting to:", connectionUri)
-			cmd := exec.Command("psql", connectionUri)
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				fmt.Println("Error:", err)
-			}
 		})
 
 		app.Draw()
@@ -458,81 +440,3 @@ func refreshInstanceTable(table *tview.Table) {
 	}
 }
 
-type DatabaseRecord struct {
-	Name string
-	Owner string
-	Encoding string
-	Collate string
-	Ctype string
-	AccessPrivileges string
-}
-
-func ListDatabases(projectID string, instanceName string, userName string) ([]DatabaseRecord, error) {
-	user := cfg.Instances[instanceName].Users[userName].Username
-	host := cfg.Instances[instanceName].Host
-	port := 5432
-	dbname := "postgres" // Connect to a default database to list others
-
-	authConfig, err := auth.NewAuthConfig(cfg.Instances[instanceName].Users[userName].DefaultAuth, cfg.Instances[instanceName].Users[userName].Auth)
-	if err != nil {
-		return nil, err
-	}
-
-	password := authConfig.GetCredential()
-	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user, password, host, port, dbname)
-
-	db, err := sql.Open("postgres", connectionUri)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
-	ctx := context.Background()
-	rows, err := db.QueryContext(ctx, `SELECT
-  d.datname AS "Name",
-  pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
-  pg_catalog.pg_encoding_to_char(d.encoding) AS "Encoding",
-  d.datcollate AS "Collate",
-  d.datctype AS "Ctype",
-  pg_catalog.array_to_string(d.datacl, E'\n') AS "Access privileges"
-FROM
-  pg_catalog.pg_database d
-WHERE
-  datistemplate = false
-ORDER BY
-  d.datname;`)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var databases []DatabaseRecord
-	for rows.Next() {
-		var name string
-		var owner string
-		var encoding string
-		var collate string
-		var ctype string
-		var accessPrivileges sql.NullString
-		if err := rows.Scan(&name, &owner, &encoding, &collate, &ctype, &accessPrivileges); err != nil {
-			return nil, err
-		}
-
-		database := DatabaseRecord{
-			Name: name,
-			Owner: owner,
-			Encoding: encoding,
-			Collate: collate,
-			Ctype: ctype,
-		}
-
-		if accessPrivileges.Valid {
-			database.AccessPrivileges = accessPrivileges.String
-		}
-		databases = append(databases, database)
-	}
-
-	return databases, nil
-}
