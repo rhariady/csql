@@ -50,7 +50,7 @@ func (a *PostgreSQLDBAdapter) ListDatabases(instance *config.InstanceConfig, use
 	port := instance.Port
 	dbname := "postgres" // Connect to a default database to list others
 
-	authConfig, err := auth.NewAuthConfig(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
+	authConfig, err := auth.GetAuth(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ ORDER BY
 }
 	
 func (a *PostgreSQLDBAdapter) RunShell(instance *config.InstanceConfig, dbname string, username string) {
-			authConfig, err := auth.NewAuthConfig(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
+			authConfig, err := auth.GetAuth(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
 			if err != nil {
 				panic(err)
 			}

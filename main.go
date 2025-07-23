@@ -10,6 +10,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
 
+	"github.com/rhariady/csql/pkg/auth"
 	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/discovery"
 	"github.com/rhariady/csql/pkg/dbadapter"
@@ -263,26 +264,14 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 		//SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
 
-	auth_type.AddOption("local", func() {
-		for form.GetFormItemCount() > 2 {
-			form.RemoveFormItem(2)
-		}
-
-		form.AddInputField("Password", "", 0, nil, nil)
-	})
-
-	auth_type.AddOption("vault", func() {
-		item_count := form.GetFormItemCount()
-		for i := 2; i < item_count; i++ {
-			form.RemoveFormItem(i)
-		}
-
-		form.
-			AddInputField("Vault Address", "", 0, nil, nil).
-			AddInputField("Vault Mount Path", "", 0, nil, nil).
-			AddInputField("Vault Secret Path", "", 0, nil, nil).
-			AddInputField("Vault Secret Key", "", 0, nil, nil)
-	})
+	for authType, authConfig := range auth.AuthList {
+		auth_type.AddOption(authType, func() {
+			for form.GetFormItemCount() > 2 {
+				form.RemoveFormItem(2)
+			}
+			authConfig.GetFormInput(form)
+		})
+	}
 
 	form = tview.NewForm().
 		AddInputField("Username", "", 0, nil, nil).
