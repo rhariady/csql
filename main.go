@@ -125,9 +125,9 @@ func showUserSelection(app *tview.Application, pages *tview.Pages, mainTable *tv
 		SetSelectable(true, false)
 
 	userRow := 0
-	for name, user := range cfg.Instances[instanceName].Users {
-		userTable.SetCell(userRow, 0, tview.NewTableCell(name))
-		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.DefaultAuth)).SetExpansion(1))
+	for _, user := range cfg.Instances[instanceName].Users {
+		userTable.SetCell(userRow, 0, tview.NewTableCell(user.Username))
+		userTable.SetCell(userRow, 1, tview.NewTableCell(fmt.Sprintf("[auth=%s]", user.AuthType)).SetExpansion(1))
 		userRow++
 	}
 
@@ -185,8 +185,9 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 	// Get databases
 	go func() {
 		instance := cfg.Instances[instanceName]
+		user, _ := instance.GetUserConfig(userName)
 		dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
-		databases, err := dbAdapter.ListDatabases(&instance, userName)
+		databases, err := dbAdapter.ListDatabases(&instance, user)
 		if err != nil {
 			// Show an error modal
 			errorModal := tview.NewModal().
@@ -219,9 +220,9 @@ func showDatabaseList(app *tview.Application, pages *tview.Pages, instanceName s
 			app.Stop() // Stop the tview app to hand over to psql
 
 			instance := cfg.Instances[instanceName]
-
+			user, _ := instance.GetUserConfig(userName)
 			dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
-			dbAdapter.RunShell(&instance, dbName, userName)
+			dbAdapter.RunShell(&instance, user, dbName)
 
 		})
 
@@ -280,38 +281,15 @@ func showAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 			username := form.GetFormItem(0).(*tview.InputField).GetText()
 			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
 
-			var newUser config.UserConfig
-			if authType == "vault" {
-				vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
-				vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
-				vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
-				vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
-				newUser = config.UserConfig{
-					Username:    username,
-					DefaultAuth: "vault",
-					Auth: map[string]interface{}{
-						"vault": map[string]string{
-							"address":     vaultAddress,
-							"mount_path":  vaultMountPath,
-							"secret_path": vaultSecretPath,
-							"secret_key":  vaultSecretKey,
-						},
-					},
-				}
-			} else if authType == "local" {
-				password := form.GetFormItem(2).(*tview.InputField).GetText()
-				newUser = config.UserConfig{
-					Username:    username,
-					DefaultAuth: "local",
-					Auth: map[string]interface{}{
-						"local": map[string]string{
-							"password": password,
-						},
-					},
-				}
+			authAdapter, _ := auth.GetAuth(authType, nil)
+			authParams := authAdapter.ParseFormInput(form)
+			newUser := config.UserConfig{
+				Username:    username,
+				AuthType: authType,
+				AuthParams: authParams,
 			}
 
-			cfg.Instances[instanceName].Users[username] = newUser
+			cfg.AddInstanceUser(instanceName, newUser)
 			cfg.WriteConfig()
 
 			pages.RemovePage("addUserModal")

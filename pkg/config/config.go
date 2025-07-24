@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -17,15 +18,15 @@ type InstanceConfig struct {
 	Host      string `toml:"host"`
 	Port      int `toml:"port"`
 	Type      string `toml:"type"`
-	Users     map[string]UserConfig
+	Users     []UserConfig
 	Params    map[string]interface{} `toml:"params"`
 }
 
 type UserConfig struct {
 	Username string `toml:"username"`
 	// Auth AuthConfig `toml:"auth"`
-	DefaultAuth string `toml:"default_auth"`
-	Auth map[string]interface{} `toml:"Auth"`
+	AuthType string `toml:"auth_type"`
+	AuthParams map[string]interface{} `toml:"params"`
 }
 
 func (c *Config) AddInstance(key string, instanceConfig InstanceConfig) {
@@ -33,6 +34,22 @@ func (c *Config) AddInstance(key string, instanceConfig InstanceConfig) {
 		c.Instances = make(map[string]InstanceConfig)
 	}
 	c.Instances[key] = instanceConfig
+}
+
+func (c *Config) AddInstanceUser(instanceName string, userConfig UserConfig) {
+	instance := c.Instances[instanceName]
+	instance.Users = append(instance.Users, userConfig)
+	c.AddInstance(instanceName, instance)
+}
+
+func (c *InstanceConfig) GetUserConfig(userName string) (*UserConfig, error) {
+	for _, user := range c.Users {
+		if user.Username == userName {
+			return &user, nil
+		}
+	}
+
+	return nil, fmt.Errorf("User Not Found")
 }
 
 func GetConfigFile() (*string, error) {

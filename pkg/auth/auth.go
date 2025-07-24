@@ -8,28 +8,79 @@ import (
 
 	"github.com/BurntSushi/toml"
 	vault "github.com/hashicorp/vault/api"
+	"github.com/rivo/tview"
 )
 
-type AuthConfig interface{
-	GetCredential() string
+type AuthType = string
+
+const (
+	Local AuthType = "Local"
+	Vault  AuthType = "Vault"
+)
+
+var AuthList = map[AuthType]IAuth{
+	Local: &LocalAuth{},
+	Vault: &VaultAuth{},
 }
 
-type LocalAuthConfig struct {
+type IAuth interface{
+	GetCredential() string
+	GetFormInput(form *tview.Form)
+	ParseFormInput(form *tview.Form) map[string]interface{}
+}
+
+func GetAuth(authType string, authParams map[string]interface{}) (IAuth, error) {
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(authParams); err != nil {
+		return nil, err
+	}
+	authConfigData := buf.String()
+
+	switch authType {
+	case Vault:
+		var vaultAuth VaultAuth
+		if _, err := toml.Decode(authConfigData, &vaultAuth); err != nil {
+			return nil, err
+		}
+		return vaultAuth, nil
+	case Local:
+		var localAuth LocalAuth
+		if _, err := toml.Decode(authConfigData, &localAuth); err != nil {
+			return nil, err
+		}
+		return localAuth, nil
+  default:
+		return nil, errors.New("AuthTypeNotFound")
+	}
+}
+
+type LocalAuth struct {
 	Password string `toml:"password"`
 }
 
-func (l LocalAuthConfig) GetCredential() string {
+func (l LocalAuth) GetCredential() string {
 	return l.Password
 }
 
-type VaultAuthConfig struct {
+func (l LocalAuth) GetFormInput(form *tview.Form) {
+	form.AddInputField("Password", "", 0, nil, nil)
+}
+
+func (l LocalAuth) ParseFormInput(form *tview.Form) map[string]interface{} {
+	password := form.GetFormItem(2).(*tview.InputField).GetText()
+	return map[string]interface{}{
+		"password": password,
+	}
+}
+
+type VaultAuth struct {
 	Address string `toml:"address"`
 	MountPath string `toml:"mount_path"`
 	SecretPath string `toml:"secret_path"`
 	SecretKey string `toml:"secret_key"`
 }
 
-func (v VaultAuthConfig) GetCredential() string {
+func (v VaultAuth) GetCredential() string {
 	vault_address := v.Address
 	vault_mount_path := v.MountPath
 	vault_secret_path := v.SecretPath
@@ -41,6 +92,28 @@ func (v VaultAuthConfig) GetCredential() string {
 	}
 
 	return password
+}
+
+func (l VaultAuth) GetFormInput(form *tview.Form) {
+	form.
+		AddInputField("Vault Address", "", 0, nil, nil).
+		AddInputField("Vault Mount Path", "", 0, nil, nil).
+		AddInputField("Vault Secret Path", "", 0, nil, nil).
+		AddInputField("Vault Secret Key", "", 0, nil, nil)
+}
+
+func (l VaultAuth) ParseFormInput(form *tview.Form) map[string]interface{} {
+	vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
+	vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
+	vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
+	vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+
+	return map[string]interface{}{
+		"address":     vaultAddress,
+		"mount_path":  vaultMountPath,
+		"secret_path": vaultSecretPath,
+		"secret_key":  vaultSecretKey,
+	}
 }
 
 func getPasswordFromVault(address string, mount_path string, secret_path string, secret_key string) (string, error) {
@@ -66,34 +139,5 @@ func getPasswordFromVault(address string, mount_path string, secret_path string,
 	}
 
 	return password, nil
-}
-
-func NewAuthConfig(authType string, authMap map[string]interface{}) (AuthConfig, error) {
-	switch authType {
-	case "vault":
-		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(authMap["vault"]); err != nil {
-			return nil, err
-		}
-		authConfigData := buf.String()
-		var vaultAuthConfig VaultAuthConfig
-		if _, err := toml.Decode(authConfigData, &vaultAuthConfig); err != nil {
-			return nil, err
-		}
-		return vaultAuthConfig, nil
-	case "local":
-		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(authMap["local"]); err != nil {
-			return nil, err
-		}
-		authConfigData := buf.String()
-		var localAuthConfig LocalAuthConfig
-		if _, err := toml.Decode(authConfigData, &localAuthConfig); err != nil {
-			return nil, err
-		}
-		return localAuthConfig, nil
-  default:
-		return nil, errors.New("AuthTypeNotFound")
-	}
 }
 

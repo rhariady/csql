@@ -49,7 +49,7 @@ func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form
 		Host:   host,
 		Port:   port,
 		Type:   databaseType,
-		Users: map[string]config.UserConfig{},
+		Users: []config.UserConfig{},
 		Params: map[string]interface{}{
 			"discovery": string(Manual),
 		},
@@ -102,7 +102,7 @@ func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form)
 			Host:   instance.IpAddresses[0].IpAddress,
 			Port:   port,
 			Type:   databaseType,
-			Users: map[string]config.UserConfig{},
+			Users: []config.UserConfig{},
 			Params: map[string]interface{}{
 				"discovery": string(GCP),
 				"project_id": projectId,

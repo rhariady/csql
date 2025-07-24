@@ -20,8 +20,8 @@ const (
 )
 
 type IDBAdapter interface{
-	ListDatabases(instance *config.InstanceConfig, username string) ([]DatabaseRecord, error)
-	RunShell(instance *config.InstanceConfig, dbname string, username string)
+	ListDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error)
+	RunShell(instance *config.InstanceConfig, user *config.UserConfig, username string)
 }
 
 func GetDBAdapter(dbType DBType) (IDBAdapter, error) {
@@ -44,13 +44,13 @@ type DatabaseRecord struct {
 }
 
 
-func (a *PostgreSQLDBAdapter) ListDatabases(instance *config.InstanceConfig, username string) ([]DatabaseRecord, error) {
-	user := username
+func (a *PostgreSQLDBAdapter) ListDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error) {
+	user := userConfig.Username
 	host := instance.Host
 	port := instance.Port
 	dbname := "postgres" // Connect to a default database to list others
 
-	authConfig, err := auth.GetAuth(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
+	authConfig, err := auth.GetAuth(userConfig.AuthType, userConfig.AuthParams)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +114,14 @@ ORDER BY
 	return databases, nil
 }
 	
-func (a *PostgreSQLDBAdapter) RunShell(instance *config.InstanceConfig, dbname string, username string) {
-			authConfig, err := auth.GetAuth(instance.Users[username].DefaultAuth, instance.Users[username].Auth)
+func (a *PostgreSQLDBAdapter) RunShell(instance *config.InstanceConfig, user *config.UserConfig, dbname string) {
+			authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
 			if err != nil {
 				panic(err)
 			}
 
 			password := authConfig.GetCredential()
-			connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", username, password, instance.Host, instance.Port, dbname)
+			connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user.Username, password, instance.Host, instance.Port, dbname)
 
 			fmt.Println("Connecting to:", connectionUri)
 			cmd := exec.Command("psql", connectionUri)
