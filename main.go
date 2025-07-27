@@ -21,9 +21,14 @@ func main() {
 		panic("This application is intended to be run in an interactive terminal.")
 	} else {
 
-		app := app.NewApplication(cfg)
+		application := app.NewApplication(cfg)
 
-		if err := app.Run(); err != nil {
+		var sessions []*app.Session
+		sessions = make([]*app.Session, 10)
+		
+		sessions = append(sessions, app.NewSession(application))
+
+		if err := application.Start(); err != nil {
 			panic(err)
 		}
 	}

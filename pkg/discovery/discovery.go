@@ -138,3 +138,11 @@ func listGCPInstances(projectId string) ([]*sqladmin.DatabaseInstance, error) {
 	return instances.Items, nil
 }
 
+func GetAllDiscovery() []IDiscovery {
+	discoveries := make([]IDiscovery, 0, len(DiscoveryList))
+	for _, d := range DiscoveryList {
+		discoveries = append(discoveries, d)
+	}
+	return discoveries
+}
+
