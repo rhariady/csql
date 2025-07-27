@@ -6,6 +6,8 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/rhariady/csql/pkg/config"
+	"github.com/rhariady/csql/pkg/session"
+
 	"github.com/rhariady/csql/pkg/dbadapter/postgresql"
 )
 
@@ -16,7 +18,7 @@ const (
 )
 
 type IDBAdapter interface{
-	Connect(instance *config.InstanceConfig, userConfig *config.UserConfig)
+	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig)
 	// ListDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error)
 	// RunShell(instance *config.InstanceConfig, user *config.UserConfig, username string)
 }

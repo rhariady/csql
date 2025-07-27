@@ -36,6 +36,12 @@ func (c *Config) AddInstance(key string, instanceConfig InstanceConfig) {
 	c.Instances[key] = instanceConfig
 }
 
+func (c *Config) GetInstance(instanceName string) *InstanceConfig {
+	instance := c.Instances[instanceName]
+
+	return &instance
+}
+
 func (c *Config) AddInstanceUser(instanceName string, userConfig UserConfig) {
 	instance := c.Instances[instanceName]
 	instance.Users = append(instance.Users, userConfig)

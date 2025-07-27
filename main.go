@@ -5,8 +5,10 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/mattn/go-isatty"
+	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
+	"github.com/rhariady/csql/pkg/session"
 	"github.com/rhariady/csql/pkg/app"
 )
 
@@ -21,14 +23,19 @@ func main() {
 		panic("This application is intended to be run in an interactive terminal.")
 	} else {
 
-		application := app.NewApplication(cfg)
-
-		var sessions []*app.Session
-		sessions = make([]*app.Session, 10)
+		application := tview.NewApplication()
 		
-		sessions = append(sessions, app.NewSession(application))
+		session := session.NewSession(application, cfg)
+		instanceList := app.NewInstanceList()
+		session.SetView(instanceList)
 
-		if err := application.Start(); err != nil {
+		// var sessions []*session.Session
+		// sessions = make([]*session.Session, 10)
+
+		// sessions = append(sessions, session)
+
+
+		if err := application.Run(); err != nil {
 			panic(err)
 		}
 	}
