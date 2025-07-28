@@ -5,4 +5,3 @@ import (
 )
 
 var cfg *config.Config
-

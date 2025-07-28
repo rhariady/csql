@@ -1,15 +1,12 @@
 package postgresql
 
 import (
-	"fmt"
 	"context"
 	"database/sql"
 	
 	"github.com/rivo/tview"
 
-	"github.com/rhariady/csql/pkg/auth"
 	"github.com/rhariady/csql/pkg/session"
-	"github.com/rhariady/csql/pkg/config"
 )
 
 type DatabaseRecord struct {
@@ -22,7 +19,7 @@ type DatabaseRecord struct {
 }
 
 type DatabaseList struct {
-	*PostgreSQLDBAdapter
+	*PostgreSQLAdapter
 
 	// instance *config.InstanceConfig
 	// user *config.UserConfig
@@ -48,7 +45,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 
 	// Get databases
 	go func() {
-		databases, _ := listDatabases(d.instance, d.user)
+		databases, _ := listDatabases(d.conn)
 		// if err != nil {
 		// 	// Show an error modal
 		// 	errorModal := tview.NewModal().
@@ -82,7 +79,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 			return
 		}
 		dbName := databaseTable.GetCell(row, 0).Text
-		tableList := NewTableList(d.PostgreSQLDBAdapter, dbName)
+		tableList := NewTableList(d.PostgreSQLAdapter, dbName)
 		session.SetView(tableList)
 		// session.App.Stop() // Stop the tview app to hand over to psql
 
@@ -109,35 +106,18 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 // 	}
 // }
 
-func NewDatabaseList(adapter *PostgreSQLDBAdapter) *DatabaseList {
+func NewDatabaseList(adapter *PostgreSQLAdapter) *DatabaseList {
 	return &DatabaseList{
-		PostgreSQLDBAdapter: adapter,
+		PostgreSQLAdapter: adapter,
 	}
 }
 
-func listDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error) {
-	user := userConfig.Username
-	host := instance.Host
-	port := instance.Port
-	dbname := "postgres" // Connect to a default database to list others
-
-	authConfig, err := auth.GetAuth(userConfig.AuthType, userConfig.AuthParams)
-	if err != nil {
-		return nil, err
-	}
-
-	password := authConfig.GetCredential()
-	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user, password, host, port, dbname)
-
-	db, err := sql.Open("postgres", connectionUri)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+func listDatabases(conn *sql.DB) ([]DatabaseRecord, error) {
+	// defer db.Close()
 
 	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
 	ctx := context.Background()
-	rows, err := db.QueryContext(ctx, `SELECT
+	rows, err := conn.QueryContext(ctx, `SELECT
   d.datname AS "Name",
   pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
   pg_catalog.pg_encoding_to_char(d.encoding) AS "Encoding",

@@ -18,15 +18,37 @@ const (
 )
 
 type IDBAdapter interface{
-	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig)
+	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig) error
+	Close() error
 	// ListDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error)
 	// RunShell(instance *config.InstanceConfig, user *config.UserConfig, username string)
 }
 
 func GetDBAdapter(dbType DBType) (IDBAdapter, error) {
+	var adapter IDBAdapter
 	if dbType == PostgreSQL {
-		return &postgresql.PostgreSQLDBAdapter{}, nil
+		adapter = &postgresql.PostgreSQLAdapter{}
+		RegisterDBAdapter(adapter)
+		return adapter, nil
 	}
 	return nil, fmt.Errorf("Unknown DB Type")
+}
+
+var adapters []IDBAdapter
+
+func RegisterDBAdapter(adapter IDBAdapter) {
+		if adapters == nil {
+			adapters = make([]IDBAdapter, 0)
+		}
+
+		adapters = append(adapters, adapter)	
+}
+
+func CloseAllAdapter() {
+	for _, adapter := range adapters {
+		if adapter != nil {
+			adapter.Close()
+		}
+	}
 }
 

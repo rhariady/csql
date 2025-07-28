@@ -10,6 +10,7 @@ import (
 	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/session"
 	"github.com/rhariady/csql/pkg/app"
+	_ "github.com/rhariady/csql/pkg/dbadapter"
 )
 
 func main() {
@@ -38,6 +39,8 @@ func main() {
 		if err := application.Run(); err != nil {
 			panic(err)
 		}
+
+		// dbadapter.CloseAllAdapter()
 	}
 }
 

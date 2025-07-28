@@ -24,6 +24,7 @@ type InstanceConfig struct {
 
 type UserConfig struct {
 	Username string `toml:"username"`
+	DefaultDatabase string `toml:"default_database"`
 	// Auth AuthConfig `toml:"auth"`
 	AuthType string `toml:"auth_type"`
 	AuthParams map[string]interface{} `toml:"params"`

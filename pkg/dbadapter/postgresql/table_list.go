@@ -1,14 +1,11 @@
 package postgresql
 
 import (
-	"fmt"
 	"context"
 	"database/sql"
 
 	"github.com/rivo/tview"
 
-	"github.com/rhariady/csql/pkg/auth"
-	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/session"
 )
 
@@ -21,16 +18,15 @@ type TableRecord struct {
 }
 
 type TableList struct {
-	*PostgreSQLDBAdapter
+	*PostgreSQLAdapter
 
-	database string
 	tables []TableRecord
 }
 
-func NewTableList(adapter *PostgreSQLDBAdapter, database string) *TableList {
+func NewTableList(adapter *PostgreSQLAdapter, database string) *TableList {
 	return &TableList{
-		PostgreSQLDBAdapter: adapter,
-		database: database,
+		PostgreSQLAdapter: adapter,
+		// database: database,
 	}
 }
 func (tl *TableList) GetTitle() string {
@@ -49,9 +45,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 	tableTable.SetCell(1, 0, tview.NewTableCell("Loading tables..."))
 
 	go func() {
-		tables, _ := listTables(tl.instance, tl.user, tl.database)
-		// session.App.Stop()
-		// fmt.Printf("%v", tables)
+		tables, _ := listTables(tl.conn)
 		for i, table := range tables {
 			tableTable.SetCell(i+1, 0, tview.NewTableCell(table.Schema))
 			tableTable.SetCell(i+1, 1, tview.NewTableCell(table.Name))
@@ -63,30 +57,28 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		
 	}()
 
+	tableTable.SetSelectedFunc(func(row int, column int) {
+		if row == 0 { // Skip header
+			return
+		}
+		tableName := tableTable.GetCell(row, 1).Text
+		tableQuery := NewTableQuery(tl.PostgreSQLAdapter, tableName)
+		session.SetView(tableQuery)
+		// session.App.Stop() // Stop the tview app to hand over to psql
+
+		// instance := cfg.Instances[d.instanceName]
+		// user, _ := instance.GetUserConfig(d.userName)
+		// dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
+		// dbAdapter.RunShell(&instance, user, dbName)
+
+	})
+
 	return tableTable
 }
 
-func listTables(instance *config.InstanceConfig, user *config.UserConfig, database string) ([]TableRecord, error) {
-	username := user.Username
-	host := instance.Host
-	port := instance.Port
-
-	authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
-	if err != nil {
-		return nil, err
-	}
-
-	password := authConfig.GetCredential()
-	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", username, password, host, port, database)
-
-	db, err := sql.Open("postgres", connectionUri)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
+func listTables(conn *sql.DB) ([]TableRecord, error) {
 	ctx := context.Background()
-	rows, err := db.QueryContext(ctx, `SELECT n.nspname as "Schema",
+	rows, err := conn.QueryContext(ctx, `SELECT n.nspname as "Schema",
 c.relname as "Name", 
 CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' END as "Type",
 pg_catalog.pg_get_userbyid(c.relowner) as "Owner"

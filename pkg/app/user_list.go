@@ -46,6 +46,7 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		user, _ := i.instance.GetUserConfig(userName)
 		dbAdapter, _ := dbadapter.GetDBAdapter(i.instance.Type)
 		dbAdapter.Connect(session, i.instance, user)
+
 		// session.SetView(databaseList)
 		//ShowDatabaseList(app, pages, instanceName, userName, userTable)
 	})
