@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
@@ -73,7 +74,24 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 
 	})
 
+	tableTable.SetDoneFunc(func(key tcell.Key){
+		if key == tcell.KeyEsc {
+			databaseList := NewDatabaseList(tl.PostgreSQLAdapter)
+			session.SetView(databaseList)
+		}
+	})
 	return tableTable
+}
+
+func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("<enter>", "Get table record"),
+	}
+
+	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
+	keybindings = append(keybindings, base_keybinding...)
+
+	return
 }
 
 func listTables(conn *sql.DB) ([]TableRecord, error) {

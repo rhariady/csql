@@ -99,6 +99,13 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 	return databaseTable
 }
 
+func (i *DatabaseList) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("<enter>", "List database tables"),
+	}
+	return
+}
+
 // func NewDatabaseList(instance *config.InstanceConfig, user *config.UserConfig) *DatabaseList {
 // 	return &DatabaseList{
 // 		instance: instance,

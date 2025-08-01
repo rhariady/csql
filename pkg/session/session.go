@@ -2,7 +2,8 @@ package session
 
 import (
 	"fmt"
-	
+
+	// "github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
@@ -18,14 +19,23 @@ type Session struct {
 }
 
 type KeyBinding struct {
-	Key string
-	Purpose string
+	hint string
+	description string
+	// function func()
+}
+
+func NewKeyBinding(hint string, description string) *KeyBinding {
+	return &KeyBinding{
+		hint: hint,
+		description: description,
+		// function: function,
+	}
 }
 
 type View interface {
 	GetTitle() string
 	GetContent(*Session) tview.Primitive
-	// 	GetKeyBindings() []KeyBinding
+	GetKeyBindings() []*KeyBinding
 }
 
 func NewSession(app *tview.Application, config *config.Config) *Session {
@@ -55,7 +65,7 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 	return &session
 }
 
-func (s *Session) ShowHeader() {
+func (s *Session) ShowHeader(keyBindings []*KeyBinding) {
 	s.headerFlex.Clear()
 	logo := tview.NewTextView().SetText(`
    ___________ ____    __
@@ -64,22 +74,14 @@ func (s *Session) ShowHeader() {
 / /___ ___/ / /_/ / / /___
 \____//____/\___\_\/_____/`)
 
-	keyBindings := []struct {
-		Key     string
-		Purpose string
-	}{
-		{"q", "quit"},
-		{"a", "add instance"},
-		{"enter", "select"},
-	}
-
 	keyLegend := tview.NewGrid().
 		SetRows(1, 1, 1, 1, 1, 1)
 
 	for i, binding := range keyBindings {
 		x := i / 6
 		y := i % 6
-		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("<%s> %s", binding.Key, binding.Purpose)), y, x, 1, 1, 0, 0, false)
+		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", binding.hint)), y, x, 1, 1, 0, 0, false)
+		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", binding.description)), y, x+1, 1, 1, 0, 0, false)
 	}
 
 	s.headerFlex.AddItem(keyLegend, 0, 1, false).
@@ -88,7 +90,8 @@ func (s *Session) ShowHeader() {
 }
 
 func (s *Session) SetView(view View) {
-	s.ShowHeader()
+	keybindings := view.GetKeyBindings()
+	s.ShowHeader(keybindings)
 
 	content := view.GetContent(s)
 	s.mainFlex.SetTitle(view.GetTitle())
@@ -96,6 +99,21 @@ func (s *Session) SetView(view View) {
 	s.mainFlex.AddItem(content, 0, 1, true)
 
 	s.App.SetFocus(content)
+
+	// keybindingMap := make(map[string]*KeyBinding)
+	// for _, keybinding := range keybindings {
+	// 	keybindingMap[keybinding.key] = keybinding
+	// }
+
+	// content.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// 	rune := event.Rune()
+	// 	keybinding, ok := keybindingMap[rune]
+	// 	if ok {
+	// 		return nil
+	// 	}
+
+	// 	return event
+	// })
 }
 
 func (s *Session) ShowModal(view View) {

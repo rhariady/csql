@@ -47,6 +47,18 @@ func (i *InstanceList) GetContent(session *session.Session) tview.Primitive {
 
 }
 
+func AddInstanceForm() {
+	fmt.Println("test")
+}
+
+func (i *InstanceList) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("[a]", "Add new instance"),
+		session.NewKeyBinding("<enter>", "Select instance"),
+	}
+	return
+}
+
 func NewInstanceList() *InstanceList {
 	return &InstanceList{}
 }

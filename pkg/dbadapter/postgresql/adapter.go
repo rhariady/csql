@@ -63,6 +63,13 @@ func (a *PostgreSQLAdapter) Close() error {
 	return nil
 }
 
+func (i *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("[s]", "Open shell"),
+	}
+	return
+}
+
 func (a *PostgreSQLAdapter) RunShell(instance *config.InstanceConfig, user *config.UserConfig, dbname string) {
 			authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
 			if err != nil {

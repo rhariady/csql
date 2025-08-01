@@ -62,6 +62,10 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 	return userTable
 }
 
+func (i *UserList) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	return
+}
+
 func NewUserList(instance *config.InstanceConfig) *UserList {
 	return &UserList{
 		instance: instance,

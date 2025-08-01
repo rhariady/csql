@@ -1,11 +1,12 @@
 package postgresql
 
 import (
-	"fmt"
 	"context"
 	"database/sql"
+	"fmt"
 	_ "strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
@@ -38,8 +39,9 @@ func (tq *TableQuery) GetTitle() string {
 func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 	queryResultTable := tview.NewTable().
 		SetBorders(true).
-		SetSelectable(false, true)
-
+		SetSelectable(true, false).
+		SetFixed(1, 1)
+	
 	go func() {
 		// session.App.Stop()
 		// columns, _ := getTableColumn(tq.conn, tq.table)
@@ -58,14 +60,27 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 				queryResultTable.SetCell(i+1, j, tview.NewTableCell(row[column]))
 			}
 
+			queryResultTable.ScrollToBeginning()
 			session.App.Draw()
 		}
 		
 	}()
 
+	queryResultTable.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEsc {
+			tableList := NewTableList(tq.PostgreSQLAdapter, tq.PostgreSQLAdapter.database)
+			session.SetView(tableList)
+		}
+	})
 	return queryResultTable
 }
 
+func (i *TableQuery) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("<escape>", "Go back to table list"),
+	}
+	return
+}
 
 func getTableColumn(conn *sql.DB, tableName string) ([]string, error) {
 	ctx := context.Background()
