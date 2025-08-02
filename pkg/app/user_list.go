@@ -2,13 +2,14 @@ package app
 
 import (
 	"fmt"
-	
+
 	"github.com/gdamore/tcell/v2"
+	_ "github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
+	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/dbadapter"
 	"github.com/rhariady/csql/pkg/session"
-	"github.com/rhariady/csql/pkg/config"
 )
 
 type UserList struct{
@@ -33,12 +34,6 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 
 	userTable.Select(0, 0)
 
-	userTable.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			session.CloseModal()
-		}
-	})
-
 	userTable.SetSelectedFunc(func(row int, column int) {
 		// databaseList := NewDatabaseList(i.instanceName, userName)
 		session.CloseModal()
@@ -51,11 +46,14 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		//ShowDatabaseList(app, pages, instanceName, userName, userTable)
 	})
 
-	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// if event.Rune() == 'a' {
-		// 	ShowAddUserForm(app, pages, mainTable, instanceName)
-		// 	return nil // Consume the event
-		// }
+	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+		switch event.Rune() {
+		case 'a':
+			session.CloseModal()
+			add_user := NewAddUser(i.instance)
+			session.ShowModal(add_user)
+			return nil
+		}
 		return event
 	})
 
@@ -63,6 +61,10 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 }
 
 func (i *UserList) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("[a]", "Add new user"),
+		session.NewKeyBinding("<enter>", "Select user"),
+	}
 	return
 }
 

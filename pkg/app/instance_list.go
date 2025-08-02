@@ -17,13 +17,13 @@ func (i *InstanceList) GetTitle() string {
 	return "Instances"
 }
 
-func (i *InstanceList) GetContent(session *session.Session) tview.Primitive {
+func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 	// Create the main database table
 	i.databaseInstanceTable = tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, false)
 
-	i.RefreshInstanceTable(session)
+	i.RefreshInstanceTable(s)
 
 	// 	Set the selected function for the table (triggered by Enter key)
 	i.databaseInstanceTable.SetSelectedFunc(func(row int, column int) {
@@ -31,9 +31,9 @@ func (i *InstanceList) GetContent(session *session.Session) tview.Primitive {
 			return
 		}
 		instanceName := i.databaseInstanceTable.GetCell(row, 0).Text
-		instance := session.Config.GetInstance(instanceName)
+		instance := s.Config.GetInstance(instanceName)
 		userList := NewUserList(instance)
-		session.ShowModal(userList)
+		s.ShowModal(userList)
 	})
 
 	// Set input capture for 'a' key to trigger the same selection logic
@@ -41,8 +41,27 @@ func (i *InstanceList) GetContent(session *session.Session) tview.Primitive {
 		if event.Rune() == 'a' {
 			// ShowAddDatabasesForm(app.app, app.active_session.pages, databaseInstanceList)
 			discoverDatabase := NewDiscoverDatabase(i)
-			session.ShowModal(discoverDatabase)
+			s.ShowModal(discoverDatabase)
 			return nil // Consume the event
+		}
+		if event.Rune() == 'd' {
+			row, column := i.databaseInstanceTable.GetSelection()
+			instanceName := i.databaseInstanceTable.GetCell(row, column).Text
+			
+			messages := fmt.Sprintf(`Are you sure you want to remove this instance:
+
+%s`, instanceName)
+
+			s.ShowAlert(messages, func(s *session.Session){
+				err := s.Config.RemoveInstance(instanceName)
+				if err != nil {
+					s.ShowMessage(fmt.Sprintf("Error: \n%s", err), true)
+				} else {
+					i.databaseInstanceTable.RemoveRow(row)
+					s.ShowMessage(fmt.Sprintf("Instance %s has been removed", instanceName), true)
+				}
+			}, func(s *session.Session){})
+
 		}
 		return event
 	})
@@ -57,8 +76,9 @@ func AddInstanceForm() {
 
 func (i *InstanceList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
-		session.NewKeyBinding("[a]", "Add new instance"),
-		session.NewKeyBinding("<enter>", "Select instance"),
+		session.NewKeyBinding("[a]", "Discover new instance(s)"),
+		session.NewKeyBinding("[d]", "Remove instance"),
+		session.NewKeyBinding("<enter>", "Connect to instance"),
 	}
 	return
 }

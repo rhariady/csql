@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	_ "github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/discovery"
@@ -38,11 +38,6 @@ func (d *DiscoverDatabase) GetContent(session *session.Session) tview.Primitive 
 
 	discoveryTypeTable.Select(0, 0)
 
-	discoveryTypeTable.SetDoneFunc(func(key tcell.Key){
-		if key == tcell.KeyEscape {
-			session.CloseModal()
-		}
-	})
 	discoveryTypeTable.SetSelectedFunc(func(row, col int) {
 		session.CloseModal()
 		disc := discoveryTypeTable.GetCell(row, 0).Reference.(discovery.IDiscovery)
@@ -80,7 +75,7 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 
 	form.AddButton("Add", func() {
 		s.CloseModal()
-		s.ShowMessage("Discovering Instance(s)")
+		s.ShowMessage("Discovering Instance(s)", false)
 		go func() {
 
 			newInstances := d.discovery.DiscoverInstances(form)
@@ -107,28 +102,19 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 			}, func(s *session.Session){
 			})
 			
-			// app.QueueUpdateDraw(func() {
-			// 	time.Sleep(1 * time.Second)
-			// 	pages.RemovePage("loading-discovery")
-			// 	newInstances := tview.NewModal().
-			// 		SetText("New instances has been added...").
-			// 		AddButtons([]string{"OK"}).
-			// 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			// 			pages.RemovePage("new-instances")
-			// 		})
-			// 	pages.AddPage("new-instances", newInstances, true, true)
-			// 	// RefreshInstanceTable(databaseInstanceList)
-			// })
 		}()
 	}).
 		AddButton("Cancel", func() {
 			s.CloseModal()
 		})
 
-	// form.SetBorder(true).SetTitle("Add New Instance(s)")
 	// form.SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey).Blink(true).Underline(tcell.ColorWhite))
 	// form.SetLabelColor(tcell.ColorDarkGreen)
 	// form.SetTitleColor(tcell.ColorDarkGreen)
+
+	// form.SetCancelFunc(func(){
+	// 	s.CloseModal()
+	// })
 
 	return form
 }
@@ -146,35 +132,6 @@ func NewDiscoverDatabaseDetail(parent *DiscoverDatabase, disc discovery.IDiscove
 
 // func ShowAddDatabasesForm(app *tview.Application, pages *tview.Pages, databaseInstanceList *tview.Table) {
 
-// 	form = tview.NewForm().
-// 		AddFormItem(sourceDropDown).
-// 		AddButton("Add", func() {
-// 			loading := tview.NewModal().
-// 				SetText("Discovering instances...")
-// 			pages.RemovePage("discover-modal")
-// 			pages.AddPage("loading-discovery", loading, true, true)
-
-// 			go func() {
-
-// 				factory.DiscoverInstances(cfg, form)
-// 				cfg.WriteConfig()
-// 				app.QueueUpdateDraw(func() {
-// 					time.Sleep(1 * time.Second)
-// 					pages.RemovePage("loading-discovery")
-// 					newInstances := tview.NewModal().
-// 						SetText("New instances has been added...").
-// 						AddButtons([]string{"OK"}).
-// 						SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-// 							pages.RemovePage("new-instances")
-// 						})
-// 					pages.AddPage("new-instances", newInstances, true, true)
-// 					// RefreshInstanceTable(databaseInstanceList)
-// 				})
-// 			}()
-// 		}).
-// 		AddButton("Cancel", func() {
-// 			pages.RemovePage("discover-modal")
-// 		})
 
 // 	form.SetBorder(true).SetTitle("Add New Instance(s)")
 // 	form.SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey).Blink(true).Underline(tcell.ColorWhite))

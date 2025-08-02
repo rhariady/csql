@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	// "github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
@@ -118,9 +119,15 @@ func (s *Session) SetView(view View) {
 
 func (s *Session) ShowModal(view View) {
 	content := view.GetContent(s)
+	keybindings := view.GetKeyBindings()
+	legend := ""
+	for _, keybinding := range keybindings {
+		legend = fmt.Sprintf("%s\t%s: %s", legend, keybinding.hint, keybinding.description)
+	}
+	legend = fmt.Sprintf("%s\t<esc>: close", legend)
 	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(content, 0, 1, true).
-		AddItem(tview.NewTextView().SetText("Press Esc to go back").SetTextAlign(tview.AlignCenter), 1, 1, false)
+		AddItem(tview.NewTextView().SetText(legend).SetTextAlign(tview.AlignCenter).SetWrap(true), 0, 1, false)
 	modalFlex.SetBorder(true).SetTitle(view.GetTitle())
 	
 	modal := tview.NewFlex().
@@ -130,7 +137,14 @@ func (s *Session) ShowModal(view View) {
 			AddItem(modalFlex, 0, 1, true).
 			AddItem(nil, 0, 1, false), 0, 1, true).
 		AddItem(nil, 0, 1, false)
-	
+
+	modalFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+		if event.Key() == tcell.KeyEsc {
+			s.CloseModal()
+			return nil
+		}
+		return event
+	})
 	s.pages.AddPage("modal", modal, true, true)
 
 	s.App.SetFocus(content)
@@ -140,15 +154,22 @@ func (s *Session) CloseModal() {
 	s.pages.RemovePage("modal")
 }
 
-func (s *Session) ShowMessageAsync(text string) {
+func (s *Session) ShowMessageAsync(text string, wait bool) {
 	s.App.QueueUpdateDraw(func() {
-		s.ShowMessage(text)
+		s.ShowMessage(text, wait)
 	})
 }
 
-func (s *Session) ShowMessage(text string) {
+func (s *Session) ShowMessage(text string, wait bool) {
 	modal := tview.NewModal().
 		SetText(text)
+
+	if wait {
+		modal.
+			AddButtons([]string{"OK"}).SetDoneFunc(func(index int, label string){
+			s.CloseMessage()
+		})
+	}
 	s.pages.AddPage("message", modal, true, true)
 }
 

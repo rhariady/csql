@@ -1,20 +1,30 @@
 package app
 
 import (	
-	"github.com/gdamore/tcell/v2"
+	_ "github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/auth"
+	"github.com/rhariady/csql/pkg/session"
 )
 
-func ShowAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
+type AddUser struct {
+	instance *config.InstanceConfig
+}
+
+func (a *AddUser) GetTitle() string {
+	return "Add New User"
+}
+
+// func ShowAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
+func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 	var form *tview.Form
 	auth_type := tview.NewDropDown().
-		SetLabel("Auth Type").
-		SetListStyles(tcell.StyleDefault.Background(tcell.ColorNone), tcell.StyleDefault.Background(tcell.ColorGrey)).
-		SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
-		SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
+		SetLabel("Auth Type")
+		// SetListStyles(tcell.StyleDefault.Background(tcell.ColorNone), tcell.StyleDefault.Background(tcell.ColorGrey)).
+		// SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
+		// SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
 	//SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
@@ -42,37 +52,56 @@ func ShowAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tvie
 				AuthParams: authParams,
 			}
 
-			cfg.AddInstanceUser(instanceName, newUser)
-			cfg.WriteConfig()
+			a.instance = s.Config.AddInstanceUser(a.instance.Name, newUser)
+			s.Config.WriteConfig()
 
-			pages.RemovePage("addUserModal")
-			pages.RemovePage("userSelectionModal")
+			s.CloseModal()
+
+			user_list := NewUserList(a.instance)
+			s.ShowModal(user_list)
+			// pages.RemovePage("addUserModal")
+			// pages.RemovePage("userSelectionModal")
 			// ShowUserSelection(app, pages, mainTable, instanceName)
 		}).
 		AddButton("Cancel", func() {
-			pages.RemovePage("addUserModal")
+			s.CloseModal()
+			// pages.RemovePage("addUserModal")
 		})
 
-	form.SetBorder(true).SetTitle("Add New User")
+	// form.SetBorder(true).SetTitle("Add New User")
 	// form.SetFieldBackgroundColor(tcell.ColorDarkGreen)
-	fieldStyle := tcell.StyleDefault.
-		Background(tcell.ColorGrey).
-		Blink(true).
-		Underline(tcell.ColorWhite)
-	form.SetFieldStyle(fieldStyle)
-	form.SetLabelColor(tcell.ColorDarkGreen)
-	form.SetTitleColor(tcell.ColorDarkGreen)
+	// fieldStyle := tcell.StyleDefault.
+	// 	Background(tcell.ColorGrey).
+	// 	Blink(true).
+	// 	Underline(tcell.ColorWhite)
+	// form.SetFieldStyle(fieldStyle)
+	// form.SetLabelColor(tcell.ColorDarkGreen)
+	// form.SetTitleColor(tcell.ColorDarkGreen)
 
 	auth_type.SetCurrentOption(0)
 
-	modal := tview.NewFlex().
-		AddItem(nil, 0, 1, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 1, false).
-			AddItem(form, 0, 1, true).
-			AddItem(nil, 0, 1, false), 0, 1, false).
-		AddItem(nil, 0, 1, false)
+	// modal := tview.NewFlex().
+	// 	AddItem(nil, 0, 1, false).
+	// 	AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+	// 		AddItem(nil, 0, 1, false).
+	// 		AddItem(form, 0, 1, true).
+	// 		AddItem(nil, 0, 1, false), 0, 1, false).
+	// 	AddItem(nil, 0, 1, false)
 
-	pages.AddPage("addUserModal", modal, true, true)
-	app.SetFocus(form)
+	// pages.AddPage("addUserModal", modal, true, true)
+	// app.SetFocus(form)
+
+	return form
+}
+
+func (a *AddUser) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("[a]", "Add new user"),
+		session.NewKeyBinding("<enter>", "Select user"),
+	}
+	return
+}
+
+func NewAddUser(instance *config.InstanceConfig) *AddUser {
+	return &AddUser{instance}
 }

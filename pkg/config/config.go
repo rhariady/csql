@@ -37,16 +37,34 @@ func (c *Config) AddInstance(instanceConfig InstanceConfig) {
 	c.Instances[instanceConfig.Name] = instanceConfig
 }
 
+func (c *Config) RemoveInstance(instanceName string) error {
+	if c.Instances == nil {
+		return fmt.Errorf("Instance config is empty")
+	}
+
+	_, ok := c.Instances[instanceName]
+	if !ok {
+		return fmt.Errorf("Instance not found")
+	}
+
+	delete(c.Instances, instanceName)
+	c.WriteConfig()
+
+	return nil
+}
+
 func (c *Config) GetInstance(instanceName string) *InstanceConfig {
 	instance := c.Instances[instanceName]
 
 	return &instance
 }
 
-func (c *Config) AddInstanceUser(instanceName string, userConfig UserConfig) {
+func (c *Config) AddInstanceUser(instanceName string, userConfig UserConfig) *InstanceConfig {
 	instance := c.Instances[instanceName]
 	instance.Users = append(instance.Users, userConfig)
 	c.AddInstance(instance)
+
+	return &instance
 }
 
 func (c *InstanceConfig) GetUserConfig(userName string) (*UserConfig, error) {
