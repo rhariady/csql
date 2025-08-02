@@ -120,14 +120,17 @@ func (s *Session) SetView(view View) {
 func (s *Session) ShowModal(view View) {
 	content := view.GetContent(s)
 	keybindings := view.GetKeyBindings()
-	legend := ""
-	for _, keybinding := range keybindings {
-		legend = fmt.Sprintf("%s\t%s: %s", legend, keybinding.hint, keybinding.description)
-	}
-	legend = fmt.Sprintf("%s\t<esc>: close", legend)
+	keybindings = append(keybindings, NewKeyBinding("<esc>", "Close"))
 	modalFlex := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(content, 0, 1, true).
-		AddItem(tview.NewTextView().SetText(legend).SetTextAlign(tview.AlignCenter).SetWrap(true), 0, 1, false)
+		AddItem(content, 0, 1, true)
+
+	for _, keybinding := range keybindings {
+		legend_text := fmt.Sprintf("%s %s", keybinding.hint, keybinding.description)
+		legend := tview.NewTextView().SetText(legend_text).SetTextAlign(tview.AlignCenter).SetWrap(true).SetWordWrap(true)
+		modalFlex.AddItem(legend, 1, 0, false)
+	}
+
+	modalFlex.SetBorderPadding(2, 0, 2, 2)
 	modalFlex.SetBorder(true).SetTitle(view.GetTitle())
 	
 	modal := tview.NewFlex().

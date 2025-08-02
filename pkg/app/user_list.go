@@ -62,7 +62,7 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 
 func (i *UserList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
-		session.NewKeyBinding("[a]", "Add new user"),
+		session.NewKeyBinding("(a)", "Add new user"),
 		session.NewKeyBinding("<enter>", "Select user"),
 	}
 	return
