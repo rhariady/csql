@@ -14,17 +14,29 @@ import (
 type DiscoveryType = string
 
 const (
-	Manual  DiscoveryType = "Manual"
-	GCP     DiscoveryType = "GCP (Auto Discovery)"
+	Manual  DiscoveryType = "manual"
+	GCP     DiscoveryType = "gcp"
 )
 
-var DiscoveryList = map[DiscoveryType]IDiscovery{
-	Manual: &ManualDiscovery{},
-	GCP: &GCPDiscovery{},
+// var DiscoveryMap = map[DiscoveryType]IDiscovery{
+// 	Manual: &ManualDiscovery{},
+// 	GCP: &GCPDiscovery{},
+// }
+
+func GetAllDiscovery() []IDiscovery {
+	// discoveries := make([]IDiscovery, 0, len(DiscoveryMap))
+	// for _, d := range DiscoveryMap {
+	// 	discoveries = append(discoveries, d)
+	// }
+	discoveries := []IDiscovery{
+		&ManualDiscovery{},
+		&GCPDiscovery{},
+	}
+	return discoveries
 }
 
 type IDiscovery interface{
-	DiscoverInstances(*config.Config, *tview.Form)
+	DiscoverInstances(*tview.Form) []config.InstanceConfig
 	GetLabel() string
 	GetInstanceType() string
 	GetOptionField(*tview.Form)
@@ -38,11 +50,11 @@ func NewManualDiscovery(name, host string, port int) *ManualDiscovery {
 	}
 }
 
-func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form) {
-	_, databaseType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
-	instanceName := form.GetFormItem(2).(*tview.InputField).GetText()
-	host := form.GetFormItem(3).(*tview.InputField).GetText()
-	port, _ := strconv.Atoi(form.GetFormItem(4).(*tview.InputField).GetText())
+func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig) {
+	_, databaseType := form.GetFormItem(0).(*tview.DropDown).GetCurrentOption()
+	instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
+	host := form.GetFormItem(2).(*tview.InputField).GetText()
+	port, _ := strconv.Atoi(form.GetFormItem(3).(*tview.InputField).GetText())
 	
 	newInstance := config.InstanceConfig{
 		Name:   instanceName,
@@ -54,7 +66,10 @@ func (d *ManualDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form
 			"discovery": string(Manual),
 		},
 	}
-	cfg.AddInstance(instanceName, newInstance)
+	// cfg.AddInstance(instanceName, newInstance)
+	newInstances = append(newInstances, newInstance)
+	
+	return
 }
 
 func (d *ManualDiscovery) GetLabel() string {
@@ -62,7 +77,7 @@ func (d *ManualDiscovery) GetLabel() string {
 }
 
 func (d *ManualDiscovery) GetInstanceType() string {
-	return "manual"
+	return Manual
 }
 
 func (d *ManualDiscovery) GetOptionField(form *tview.Form) {
@@ -81,7 +96,7 @@ func NewGCPDiscovery(projectId string) *GCPDiscovery {
 	}
 }
 
-func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form) {
+func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig) {
 	projectId := form.GetFormItem(1).(*tview.InputField).GetText()
 	instances, err := listGCPInstances(projectId)
 	if err != nil {
@@ -108,8 +123,10 @@ func (gcp *GCPDiscovery) DiscoverInstances(cfg *config.Config, form *tview.Form)
 				"project_id": projectId,
 			},
 		}
-		cfg.AddInstance(instance.Name, newInstance)
+		newInstances = append(newInstances, newInstance)
+		// cfg.AddInstance(instance.Name, newInstance)
 	}
+	return
 }
 
 func (d *GCPDiscovery) GetLabel() string {
@@ -117,7 +134,7 @@ func (d *GCPDiscovery) GetLabel() string {
 }
 
 func (d *GCPDiscovery) GetInstanceType() string {
-	return "gcp"
+	return GCP
 }
 
 func (d *GCPDiscovery) GetOptionField(form *tview.Form) {
@@ -136,13 +153,5 @@ func listGCPInstances(projectId string) ([]*sqladmin.DatabaseInstance, error) {
 		return nil, err
 	}
 	return instances.Items, nil
-}
-
-func GetAllDiscovery() []IDiscovery {
-	discoveries := make([]IDiscovery, 0, len(DiscoveryList))
-	for _, d := range DiscoveryList {
-		discoveries = append(discoveries, d)
-	}
-	return discoveries
 }
 

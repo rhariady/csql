@@ -130,7 +130,7 @@ func (s *Session) ShowModal(view View) {
 			AddItem(modalFlex, 0, 1, true).
 			AddItem(nil, 0, 1, false), 0, 1, true).
 		AddItem(nil, 0, 1, false)
-		
+	
 	s.pages.AddPage("modal", modal, true, true)
 
 	s.App.SetFocus(content)
@@ -138,4 +138,72 @@ func (s *Session) ShowModal(view View) {
 
 func (s *Session) CloseModal() {
 	s.pages.RemovePage("modal")
+}
+
+func (s *Session) ShowMessageAsync(text string) {
+	s.App.QueueUpdateDraw(func() {
+		s.ShowMessage(text)
+	})
+}
+
+func (s *Session) ShowMessage(text string) {
+	modal := tview.NewModal().
+		SetText(text)
+	s.pages.AddPage("message", modal, true, true)
+}
+
+func (s *Session) CloseMessageAsync() {
+	s.App.QueueUpdateDraw(func() {
+		s.CloseMessage()
+	})
+}
+
+func (s *Session) CloseMessage() {
+	s.pages.RemovePage("message")
+}
+
+func (s *Session) ShowAlertAsync(text string, ok func(*Session), cancel func(*Session)) {
+	s.App.QueueUpdateDraw(func() {
+		s.ShowAlert(text, ok, cancel)
+	})
+}
+
+func (s *Session) ShowAlert(text string, ok func(*Session), cancel func(*Session)) {
+	modal := tview.NewModal().SetText(text)
+
+	var buttons []string
+
+	if ok != nil {
+		buttons = append(buttons, "OK")
+	}
+
+	if cancel != nil {
+		buttons = append(buttons, "Cancel")
+	}
+
+	if len(buttons) > 0 {
+		modal.AddButtons(buttons)
+	}
+
+	modal.SetDoneFunc(func(index int, label string) {
+		s.pages.RemovePage("alert")
+		switch label {
+		case "OK":
+			ok(s)
+		case "Cancel":
+			cancel(s)
+		}		
+	})
+
+	s.pages.AddPage("alert", modal, true, true)
+}
+
+func (s *Session) CloseAlertAsync() {
+	s.App.QueueUpdateDraw(func() {
+		s.CloseAlert()
+	})
+}
+
+func (s *Session) CloseAlert() {
+	s.pages.RemovePage("alert")
 }

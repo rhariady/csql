@@ -30,11 +30,11 @@ type UserConfig struct {
 	AuthParams map[string]interface{} `toml:"params"`
 }
 
-func (c *Config) AddInstance(key string, instanceConfig InstanceConfig) {
+func (c *Config) AddInstance(instanceConfig InstanceConfig) {
 	if c.Instances == nil {
 		c.Instances = make(map[string]InstanceConfig)
 	}
-	c.Instances[key] = instanceConfig
+	c.Instances[instanceConfig.Name] = instanceConfig
 }
 
 func (c *Config) GetInstance(instanceName string) *InstanceConfig {
@@ -46,7 +46,7 @@ func (c *Config) GetInstance(instanceName string) *InstanceConfig {
 func (c *Config) AddInstanceUser(instanceName string, userConfig UserConfig) {
 	instance := c.Instances[instanceName]
 	instance.Users = append(instance.Users, userConfig)
-	c.AddInstance(instanceName, instance)
+	c.AddInstance(instance)
 }
 
 func (c *InstanceConfig) GetUserConfig(userName string) (*UserConfig, error) {
