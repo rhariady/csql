@@ -40,7 +40,7 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		userName := userTable.GetCell(row, 0).Text
 		user, _ := i.instance.GetUserConfig(userName)
 		dbAdapter, _ := dbadapter.GetDBAdapter(i.instance.Type)
-		dbAdapter.Connect(session, i.instance, user)
+		dbAdapter.Connect(session, i.instance, user, user.DefaultDatabase)
 
 		// session.SetView(databaseList)
 		//ShowDatabaseList(app, pages, instanceName, userName, userTable)
@@ -65,6 +65,10 @@ func (i *UserList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 		session.NewKeyBinding("(a)", "Add new user"),
 		session.NewKeyBinding("<enter>", "Select user"),
 	}
+	return
+}
+
+func (i *UserList) GetInfo() (info []session.Info) {
 	return
 }
 

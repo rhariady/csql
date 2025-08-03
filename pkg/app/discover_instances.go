@@ -53,6 +53,10 @@ func (i *DiscoverDatabase) GetKeyBindings() (keybindings []*session.KeyBinding) 
 	return
 }
 
+func (i *DiscoverDatabase) GetInfo() (info []session.Info) {
+	return
+}
+
 func NewDiscoverDatabase(instance_list *InstanceList) *DiscoverDatabase {
 	return &DiscoverDatabase{
 		instance_list,
@@ -120,6 +124,10 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 }
 
 func (i *DiscoverDatabaseDetail) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	return
+}
+
+func (i *DiscoverDatabaseDetail) GetInfo() (info []session.Info) {
 	return
 }
 

@@ -68,7 +68,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 
 	queryResultTable.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEsc {
-			tableList := NewTableList(tq.PostgreSQLAdapter, tq.PostgreSQLAdapter.database)
+			tableList := NewTableList(tq.PostgreSQLAdapter)
 			session.SetView(tableList)
 		}
 	})

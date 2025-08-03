@@ -83,6 +83,10 @@ func (i *InstanceList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	return
 }
 
+func (i *InstanceList) GetInfo() (info []session.Info) {
+	return
+}
+
 func NewInstanceList() *InstanceList {
 	return &InstanceList{}
 }

@@ -78,8 +78,8 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 		if row == 0 { // Skip header
 			return
 		}
-		dbName := databaseTable.GetCell(row, 0).Text
-		tableList := NewTableList(d.PostgreSQLAdapter, dbName)
+		d.database = databaseTable.GetCell(row, 0).Text
+		tableList := NewTableList(d.PostgreSQLAdapter)
 		session.SetView(tableList)
 		// session.App.Stop() // Stop the tview app to hand over to psql
 

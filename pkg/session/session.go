@@ -33,9 +33,23 @@ func NewKeyBinding(hint string, description string) *KeyBinding {
 	}
 }
 
+type Info struct {
+	key string
+	value string
+}
+
+func NewInfo(key string, value string) Info {
+	return Info{
+		key: key,
+		value: value,
+		// function: function,
+	}
+}
+
 type View interface {
 	GetTitle() string
 	GetContent(*Session) tview.Primitive
+	GetInfo() []Info
 	GetKeyBindings() []*KeyBinding
 }
 
@@ -66,7 +80,7 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 	return &session
 }
 
-func (s *Session) ShowHeader(keyBindings []*KeyBinding) {
+func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
 	s.headerFlex.Clear()
 	logo := tview.NewTextView().SetText(`
    ___________ ____    __
@@ -75,8 +89,18 @@ func (s *Session) ShowHeader(keyBindings []*KeyBinding) {
 / /___ ___/ / /_/ / / /___
 \____//____/\___\_\/_____/`)
 
+	info_grid := tview.NewGrid().
+		SetRows(1, 1, 1, 1, 1, 1).
+		SetColumns(12, 0)
+
+	for i, info := range info_list {
+		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.key)), i, 0, 1, 1, 0, 0, false)
+		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.value)), i, 1, 1, 1, 0, 0, false)		
+	}
+
 	keyLegend := tview.NewGrid().
-		SetRows(1, 1, 1, 1, 1, 1)
+		SetRows(1, 1, 1, 1, 1, 1).
+		SetColumns(8, 0)
 
 	for i, binding := range keyBindings {
 		x := i / 6
@@ -85,14 +109,16 @@ func (s *Session) ShowHeader(keyBindings []*KeyBinding) {
 		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", binding.description)), y, x+1, 1, 1, 0, 0, false)
 	}
 
-	s.headerFlex.AddItem(keyLegend, 0, 1, false).
-		AddItem(tview.NewBox(), 0, 2, true).
+	// databaseInfo := tview
+	s.headerFlex.AddItem(info_grid, 0, 1, false).
+		AddItem(keyLegend, 0, 1, true).
 		AddItem(logo, 28, 0, false)
 }
 
 func (s *Session) SetView(view View) {
+	info := view.GetInfo()
 	keybindings := view.GetKeyBindings()
-	s.ShowHeader(keybindings)
+	s.ShowHeader(info, keybindings)
 
 	content := view.GetContent(s)
 	s.mainFlex.SetTitle(view.GetTitle())

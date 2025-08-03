@@ -18,7 +18,7 @@ const (
 )
 
 type IDBAdapter interface{
-	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig) error
+	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig, database string) error
 	Close() error
 	// ListDatabases(instance *config.InstanceConfig, userConfig *config.UserConfig) ([]DatabaseRecord, error)
 	// RunShell(instance *config.InstanceConfig, user *config.UserConfig, username string)

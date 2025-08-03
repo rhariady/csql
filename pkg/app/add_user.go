@@ -30,8 +30,8 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 
 	for authType, authConfig := range auth.AuthList {
 		auth_type.AddOption(authType, func() {
-			for form.GetFormItemCount() > 2 {
-				form.RemoveFormItem(2)
+			for form.GetFormItemCount() > 3 {
+				form.RemoveFormItem(3)
 			}
 			authConfig.GetFormInput(form)
 		})
@@ -39,15 +39,18 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 
 	form = tview.NewForm().
 		AddInputField("Username", "", 0, nil, nil).
+		AddInputField("Default database", "", 0, nil, nil).
 		AddFormItem(auth_type).
 		AddButton("Add User", func() {
-			username := form.GetFormItem(0).(*tview.InputField).GetText()
-			_, authType := form.GetFormItem(1).(*tview.DropDown).GetCurrentOption()
+			username := form.GetFormItemByLabel("Username").(*tview.InputField).GetText()
+			default_database := form.GetFormItemByLabel("Default database").(*tview.InputField).GetText()
+			_, authType := form.GetFormItem(2).(*tview.DropDown).GetCurrentOption()
 
 			authAdapter, _ := auth.GetAuth(authType, nil)
 			authParams := authAdapter.ParseFormInput(form)
 			newUser := config.UserConfig{
 				Username:   username,
+				DefaultDatabase: default_database,
 				AuthType:   authType,
 				AuthParams: authParams,
 			}
@@ -95,6 +98,10 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 }
 
 func (a *AddUser) GetKeyBindings() (keybindings []*session.KeyBinding) {
+	return
+}
+
+func (i *AddUser) GetInfo() (info []session.Info) {
 	return
 }
 

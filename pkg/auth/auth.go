@@ -67,7 +67,7 @@ func (l LocalAuth) GetFormInput(form *tview.Form) {
 }
 
 func (l LocalAuth) ParseFormInput(form *tview.Form) map[string]interface{} {
-	password := form.GetFormItem(2).(*tview.InputField).GetText()
+	password := form.GetFormItemByLabel("Password").(*tview.InputField).GetText()
 	return map[string]interface{}{
 		"password": password,
 	}
@@ -103,10 +103,10 @@ func (l VaultAuth) GetFormInput(form *tview.Form) {
 }
 
 func (l VaultAuth) ParseFormInput(form *tview.Form) map[string]interface{} {
-	vaultAddress := form.GetFormItem(2).(*tview.InputField).GetText()
-	vaultMountPath := form.GetFormItem(3).(*tview.InputField).GetText()
-	vaultSecretPath := form.GetFormItem(4).(*tview.InputField).GetText()
-	vaultSecretKey := form.GetFormItem(5).(*tview.InputField).GetText()
+	vaultAddress := form.GetFormItemByLabel("Vault Address").(*tview.InputField).GetText()
+	vaultMountPath := form.GetFormItemByLabel("Vault Mount Path").(*tview.InputField).GetText()
+	vaultSecretPath := form.GetFormItemByLabel("Vault Secret Path").(*tview.InputField).GetText()
+	vaultSecretKey := form.GetFormItemByLabel("Vault Secret Key").(*tview.InputField).GetText()
 
 	return map[string]interface{}{
 		"address":     vaultAddress,

@@ -21,32 +21,25 @@ type PostgreSQLAdapter struct {
 	conn *sql.DB
 }
 
-func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.InstanceConfig, user *config.UserConfig) error {
-	// a.session = session
-	a.instance = instance
-	a.user = user
-	a.database = user.DefaultDatabase
-
-	host := instance.Host
-	port := instance.Port
-
+func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.InstanceConfig, user *config.UserConfig, database string) error {
 	authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
 	if err != nil {
 		return err
 	}
 
-	dbName := user.DefaultDatabase
-	if dbName == "" {
-		dbName = "postgres"
-	}
-
 	password := authConfig.GetCredential()
-	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user.Username, password, host, port, dbName)
+	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user.Username, password, instance.Host, instance.Port, database)
 
-	a.conn, err = sql.Open("postgres", connectionUri)
+	conn, err := sql.Open("postgres", connectionUri)
 	if err != nil {
 		return err
 	}
+
+	// a.session = session
+	a.instance = instance
+	a.user = user
+	a.database = database
+	a.conn = conn
 
 	// databaseList := NewDatabaseList(instance, user)
 	databaseList := NewDatabaseList(a)
@@ -67,6 +60,19 @@ func (i *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding)
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("[s]", "Open shell"),
 	}
+	return
+}
+
+func (i *PostgreSQLAdapter) GetInfo() (info []session.Info) {
+	info = []session.Info{
+		session.NewInfo("Instance", i.instance.Name),
+		session.NewInfo("User", i.user.Username),
+	}
+
+	if i.database != "" {
+		info = append(info, session.NewInfo("Database", i.database))
+	}
+
 	return
 }
 

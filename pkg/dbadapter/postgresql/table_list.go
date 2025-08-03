@@ -24,7 +24,7 @@ type TableList struct {
 	tables []TableRecord
 }
 
-func NewTableList(adapter *PostgreSQLAdapter, database string) *TableList {
+func NewTableList(adapter *PostgreSQLAdapter) *TableList {
 	return &TableList{
 		PostgreSQLAdapter: adapter,
 		// database: database,
@@ -91,6 +91,12 @@ func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
 	keybindings = append(keybindings, base_keybinding...)
 
+	return
+}
+
+func (i *TableList) GetInfo() (info []session.Info) {
+	info = i.PostgreSQLAdapter.GetInfo()
+	info = append(info, session.NewInfo("Database", i.database))
 	return
 }
 
