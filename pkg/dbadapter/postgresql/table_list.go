@@ -82,7 +82,13 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		case 'd':
 			database_list_modal := NewChangeDatabaseModal(tl.PostgreSQLAdapter, tl)
 			session.ShowModal(database_list_modal)
-			return nil			
+			return nil
+		case 'w':
+			row, _ := tableTable.GetSelection()
+			tableName := tableTable.GetCell(row, 1).Text
+			viewQuery := NewQueryEditor(tl.PostgreSQLAdapter, "SELECT * FROM " + tableName)
+			session.SetView(viewQuery)
+			return nil
 		}
 
 		return event
@@ -93,6 +99,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<enter>", "Query table"),
+		session.NewKeyBinding("[w]", "Write query"),
 	}
 
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
