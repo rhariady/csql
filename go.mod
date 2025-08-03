@@ -6,6 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/creack/pty v1.1.24
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/lib/pq v1.10.9

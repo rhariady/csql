@@ -89,6 +89,10 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 			viewQuery := NewQueryEditor(tl.PostgreSQLAdapter, "SELECT * FROM " + tableName)
 			session.SetView(viewQuery)
 			return nil
+		case 's':
+			psqlView := NewPsqlView(tl.PostgreSQLAdapter)
+			session.SetView(psqlView)
+			return nil
 		}
 
 		return event
@@ -100,6 +104,7 @@ func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<enter>", "Query table"),
 		session.NewKeyBinding("[w]", "Write query"),
+		session.NewKeyBinding("[s]", "Open psql shell"),
 	}
 
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
