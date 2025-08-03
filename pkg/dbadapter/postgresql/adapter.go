@@ -50,8 +50,8 @@ func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.I
 	}
 
 	// databaseList := NewDatabaseList(instance, user)
-	databaseList := NewDatabaseList(a)
-	session.SetView(databaseList)
+	tableList := NewTableList(a)
+	session.SetView(tableList)
 
 	return nil
 }
@@ -89,9 +89,69 @@ func (a *PostgreSQLAdapter) ExecuteCommand(s *session.Session, command string) e
 	case "table":
 		tableList := NewTableList(a)
 		s.SetView(tableList)
+	case "role":
+		roleList := NewRoleList(a)
+		s.SetView(roleList)
+	case "database":
+		databaseList := NewDatabaseList(a)
+		s.SetView(databaseList)
 	}
 
 	return nil
+}
+
+type RoleRecord struct {
+	RolName     string
+	Attributes  string
+	MemberOf    string
+	Description string
+}
+
+func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
+	ctx := context.Background()
+	rows, err := a.conn.QueryContext(ctx, `SELECT r.rolname, 
+			array_to_string(array_agg(CASE WHEN r.rolsuper THEN 'Superuser' END ||
+									CASE WHEN r.rolcreaterole THEN 'Create role' END ||
+									CASE WHEN r.rolcreatedb THEN 'Create DB' END ||
+									CASE WHEN r.rolcanlogin THEN 'Can login' END ||
+									CASE WHEN r.rolreplication THEN 'Replication' END ||
+									CASE WHEN r.rolbypassrls THEN 'Bypass RLS' END), ', ') AS attributes,
+			array_to_string(ARRAY(SELECT b.rolname
+								FROM pg_catalog.pg_auth_members m
+								JOIN pg_catalog.pg_roles b ON (m.roleid = b.oid)
+								WHERE m.member = r.oid), ', ') as memberof,
+			pg_catalog.shobj_description(r.oid, 'pg_authid') AS description
+		FROM pg_catalog.pg_roles r
+		GROUP BY r.rolname, r.oid
+		ORDER BY r.rolname;`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []RoleRecord
+	for rows.Next() {
+		var role RoleRecord
+		var attributes sql.NullString
+		var memberof sql.NullString
+		var description sql.NullString
+		if err := rows.Scan(&role.RolName, &attributes, &memberof, &description); err != nil {
+			return nil, err
+		}
+		if attributes.Valid {
+			role.Attributes = attributes.String
+		}
+		if memberof.Valid {
+			role.MemberOf = memberof.String
+		}
+		if description.Valid {
+			role.Description = description.String
+		}
+		roles = append(roles, role)
+	}
+
+	return roles, nil
 }
 
 func (a *PostgreSQLAdapter) RunShell(instance *config.InstanceConfig, user *config.UserConfig, dbname string) {

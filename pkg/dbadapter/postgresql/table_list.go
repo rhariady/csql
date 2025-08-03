@@ -38,7 +38,6 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		SetBorders(false).
 		SetSelectable(true, false)
 
-
 	go func() {
 		session.ShowMessageAsync("Loading tables", false)
 		
@@ -104,7 +103,7 @@ func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<enter>", "Query table"),
 		session.NewKeyBinding("[w]", "Write query"),
-		session.NewKeyBinding("[s]", "Open psql shell"),
+		session.NewKeyBinding("[p]", "Open psql shell"),
 	}
 
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
