@@ -64,24 +64,34 @@ func (a *PostgreSQLAdapter) Close() error {
 	return nil
 }
 
-func (i *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding) {
+func (a *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("[d]", "Change database"),
 	}
 	return
 }
 
-func (i *PostgreSQLAdapter) GetInfo() (info []session.Info) {
+func (a *PostgreSQLAdapter) GetInfo() (info []session.Info) {
 	info = []session.Info{
-		session.NewInfo("Instance", i.instance.Name),
-		session.NewInfo("User", i.user.Username),
+		session.NewInfo("Instance", a.instance.Name),
+		session.NewInfo("User", a.user.Username),
 	}
 
-	if i.database != "" {
-		info = append(info, session.NewInfo("Database", i.database))
+	if a.database != "" {
+		info = append(info, session.NewInfo("Database", a.database))
 	}
 
 	return
+}
+
+func (a *PostgreSQLAdapter) ExecuteCommand(s *session.Session, command string) error {
+	switch command {
+	case "table":
+		tableList := NewTableList(a)
+		s.SetView(tableList)
+	}
+
+	return nil
 }
 
 func (a *PostgreSQLAdapter) RunShell(instance *config.InstanceConfig, user *config.UserConfig, dbname string) {

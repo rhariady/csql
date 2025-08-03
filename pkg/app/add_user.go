@@ -105,6 +105,10 @@ func (i *AddUser) GetInfo() (info []session.Info) {
 	return
 }
 
+func (i *AddUser) ExecuteCommand(s *session.Session, command string) error {
+	return nil
+}
+
 func NewAddUser(instance *config.InstanceConfig) *AddUser {
 	return &AddUser{instance}
 }

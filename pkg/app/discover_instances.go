@@ -57,6 +57,10 @@ func (i *DiscoverDatabase) GetInfo() (info []session.Info) {
 	return
 }
 
+func (i *DiscoverDatabase) ExecuteCommand(s *session.Session, command string) error {
+	return nil
+}
+
 func NewDiscoverDatabase(instance_list *InstanceList) *DiscoverDatabase {
 	return &DiscoverDatabase{
 		instance_list,
@@ -129,6 +133,10 @@ func (i *DiscoverDatabaseDetail) GetKeyBindings() (keybindings []*session.KeyBin
 
 func (i *DiscoverDatabaseDetail) GetInfo() (info []session.Info) {
 	return
+}
+
+func (i *DiscoverDatabaseDetail) ExecuteCommand(s *session.Session, command string) error {
+	return nil
 }
 
 func NewDiscoverDatabaseDetail(parent *DiscoverDatabase, disc discovery.IDiscovery) *DiscoverDatabaseDetail {

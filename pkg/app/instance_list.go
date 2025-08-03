@@ -87,6 +87,10 @@ func (i *InstanceList) GetInfo() (info []session.Info) {
 	return
 }
 
+func (i *InstanceList) ExecuteCommand(s *session.Session, command string) error {
+	return nil
+}
+
 func NewInstanceList() *InstanceList {
 	return &InstanceList{}
 }

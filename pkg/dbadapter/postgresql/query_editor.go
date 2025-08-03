@@ -24,6 +24,7 @@ func NewQueryEditor(adapter *PostgreSQLAdapter, query string) *QueryEditor {
 		query: query,
 	}
 }
+
 func (tq *QueryEditor) GetTitle() string {
 	return "Query"
 }

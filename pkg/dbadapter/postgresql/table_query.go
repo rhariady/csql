@@ -32,6 +32,7 @@ func NewTableQuery(adapter *PostgreSQLAdapter, table string) *TableQuery {
 		table: table,
 	}
 }
+
 func (tq *TableQuery) GetTitle() string {
 	return "Query Result"
 }

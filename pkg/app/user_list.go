@@ -77,3 +77,7 @@ func NewUserList(instance *config.InstanceConfig) *UserList {
 		instance: instance,
 	}
 }
+
+func (i *UserList) ExecuteCommand(s *session.Session, command string) error {
+	return nil
+}

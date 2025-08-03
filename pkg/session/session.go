@@ -17,6 +17,7 @@ type Session struct {
 	pages *tview.Pages
 	headerFlex *tview.Flex
 	mainFlex *tview.Flex
+	commandBar *tview.InputField
 }
 
 type KeyBinding struct {
@@ -51,6 +52,7 @@ type View interface {
 	GetContent(*Session) tview.Primitive
 	GetInfo() []Info
 	GetKeyBindings() []*KeyBinding
+	ExecuteCommand(*Session, string) error
 }
 
 func NewSession(app *tview.Application, config *config.Config) *Session {
@@ -60,9 +62,16 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 	mainFlex.SetBorder(true)
 
 	headerFlex := tview.NewFlex()
+	commandBar := tview.NewInputField().SetLabel("/").SetFieldBackgroundColor(tcell.ColorBlack)
+	commandBar.SetFieldWidth(0)
 
+	commandFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+	commandFlex.AddItem(commandBar, 1, 0, true)
+	commandFlex.SetBorder(true)
+	
 	outerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(headerFlex, 6, 0, false).
+		AddItem(commandFlex, 3, 0, false).
 		AddItem(mainFlex, 0, 1, true)
 
 	session := Session{
@@ -71,11 +80,20 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 		pages: pages,
 		headerFlex: headerFlex,
 		mainFlex: mainFlex,
+		commandBar: commandBar,
 	}
 
 	pages.AddPage("main", outerFlex, true, true)
 
 	app.SetRoot(pages, true)
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == '/' {
+			session.commandBar.SetText("")
+			session.App.SetFocus(session.commandBar)
+			return nil
+		}
+		return event
+	})
 
 	return &session
 }
@@ -124,6 +142,19 @@ func (s *Session) SetView(view View) {
 	s.mainFlex.SetTitle(view.GetTitle())
 	s.mainFlex.Clear()
 	s.mainFlex.AddItem(content, 0, 1, true)
+
+	s.commandBar.
+		SetFinishedFunc(func(key tcell.Key) {
+			switch key {
+			case tcell.KeyEnter:
+				command := s.commandBar.GetText()
+				s.commandBar.SetText("")
+				view.ExecuteCommand(s, command)
+			case tcell.KeyEsc:
+				s.commandBar.SetText("")
+				s.App.SetFocus(s.mainFlex.GetItem(0))
+			}
+		})
 
 	s.App.SetFocus(content)
 
