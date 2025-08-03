@@ -74,20 +74,6 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		tableName := tableTable.GetCell(row, 1).Text
 		tableQuery := NewTableQuery(tl.PostgreSQLAdapter, tableName)
 		session.SetView(tableQuery)
-		// session.App.Stop() // Stop the tview app to hand over to psql
-
-		// instance := cfg.Instances[d.instanceName]
-		// user, _ := instance.GetUserConfig(d.userName)
-		// dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
-		// dbAdapter.RunShell(&instance, user, dbName)
-
-	})
-
-	tableTable.SetDoneFunc(func(key tcell.Key){
-		if key == tcell.KeyEsc {
-			databaseList := NewDatabaseList(tl.PostgreSQLAdapter)
-			session.SetView(databaseList)
-		}
 	})
 
 	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{

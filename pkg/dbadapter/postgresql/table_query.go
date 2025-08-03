@@ -39,7 +39,7 @@ func (tq *TableQuery) GetTitle() string {
 func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 	queryResultTable := tview.NewTable().
 		SetBorders(true).
-		SetSelectable(true, false).
+		SetSelectable(false, false).
 		SetFixed(1, 1)
 	
 	go func() {
