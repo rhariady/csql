@@ -1,9 +1,6 @@
 package postgresql
 
 import (
-	"context"
-	"database/sql"
-	
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
@@ -45,7 +42,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 
 	// Get databases
 	go func() {
-		databases, _ := listDatabases(d.conn)
+		databases, _ := d.PostgreSQLAdapter.listDatabases()
 		// if err != nil {
 		// 	// Show an error modal
 		// 	errorModal := tview.NewModal().
@@ -119,56 +116,3 @@ func NewDatabaseList(adapter *PostgreSQLAdapter) *DatabaseList {
 	}
 }
 
-func listDatabases(conn *sql.DB) ([]DatabaseRecord, error) {
-	// defer db.Close()
-
-	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
-	ctx := context.Background()
-	rows, err := conn.QueryContext(ctx, `SELECT
-  d.datname AS "Name",
-  pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
-  pg_catalog.pg_encoding_to_char(d.encoding) AS "Encoding",
-  d.datcollate AS "Collate",
-  d.datctype AS "Ctype",
-  pg_catalog.array_to_string(d.datacl, E'\n') AS "Access privileges"
-FROM
-  pg_catalog.pg_database d
-WHERE
-  datistemplate = false
-ORDER BY
-  d.datname;`)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var databases []DatabaseRecord
-	for rows.Next() {
-		var name string
-		var owner string
-		var encoding string
-		var collate string
-		var ctype string
-		var accessPrivileges sql.NullString
-		if err := rows.Scan(&name, &owner, &encoding, &collate, &ctype, &accessPrivileges); err != nil {
-			return nil, err
-		}
-
-		database := DatabaseRecord{
-			Name: name,
-			Owner: owner,
-			Encoding: encoding,
-			Collate: collate,
-			Ctype: ctype,
-		}
-
-		if accessPrivileges.Valid {
-			database.AccessPrivileges = accessPrivileges.String
-		}
-		databases = append(databases, database)
-	}
-
-	return databases, nil
-}
-	

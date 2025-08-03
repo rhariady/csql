@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -21,25 +22,32 @@ type PostgreSQLAdapter struct {
 	conn *sql.DB
 }
 
-func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.InstanceConfig, user *config.UserConfig, database string) error {
-	authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
+func (a *PostgreSQLAdapter) openConnection() error {
+	authConfig, err := auth.GetAuth(a.user.AuthType, a.user.AuthParams)
 	if err != nil {
 		return err
 	}
 
 	password := authConfig.GetCredential()
-	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", user.Username, password, instance.Host, instance.Port, database)
 
-	conn, err := sql.Open("postgres", connectionUri)
-	if err != nil {
-		return err
-	}
+	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", a.user.Username, password, a.instance.Host, a.instance.Port, a.database)
 
+	a.conn, err = sql.Open("postgres", connectionUri)
+
+	return err
+}
+
+func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.InstanceConfig, user *config.UserConfig, database string) error {
 	// a.session = session
 	a.instance = instance
 	a.user = user
 	a.database = database
-	a.conn = conn
+
+	err := a.openConnection()
+
+	if err != nil {
+		return err
+	}
 
 	// databaseList := NewDatabaseList(instance, user)
 	databaseList := NewDatabaseList(a)
@@ -58,7 +66,7 @@ func (a *PostgreSQLAdapter) Close() error {
 
 func (i *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
-		session.NewKeyBinding("[s]", "Open shell"),
+		session.NewKeyBinding("[d]", "Change database"),
 	}
 	return
 }
@@ -93,4 +101,106 @@ func (a *PostgreSQLAdapter) RunShell(instance *config.InstanceConfig, user *conf
 			if err := cmd.Run(); err != nil {
 				fmt.Println("Error:", err)
 			}
+}
+
+func (a *PostgreSQLAdapter) listDatabases() ([]DatabaseRecord, error) {
+	// defer db.Close()
+
+	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
+	ctx := context.Background()
+	rows, err := a.conn.QueryContext(ctx, `SELECT
+  d.datname AS "Name",
+  pg_catalog.pg_get_userbyid(d.datdba) AS "Owner",
+  pg_catalog.pg_encoding_to_char(d.encoding) AS "Encoding",
+  d.datcollate AS "Collate",
+  d.datctype AS "Ctype",
+  pg_catalog.array_to_string(d.datacl, E'\n') AS "Access privileges"
+FROM
+  pg_catalog.pg_database d
+WHERE
+  datistemplate = false
+ORDER BY
+  d.datname;`)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var databases []DatabaseRecord
+	for rows.Next() {
+		var name string
+		var owner string
+		var encoding string
+		var collate string
+		var ctype string
+		var accessPrivileges sql.NullString
+		if err := rows.Scan(&name, &owner, &encoding, &collate, &ctype, &accessPrivileges); err != nil {
+			return nil, err
+		}
+
+		database := DatabaseRecord{
+			Name: name,
+			Owner: owner,
+			Encoding: encoding,
+			Collate: collate,
+			Ctype: ctype,
+		}
+
+		if accessPrivileges.Valid {
+			database.AccessPrivileges = accessPrivileges.String
+		}
+		databases = append(databases, database)
+	}
+
+	return databases, nil
+}
+	
+func (a *PostgreSQLAdapter) listTables() ([]TableRecord, error) {
+	ctx := context.Background()
+	rows, err := a.conn.QueryContext(ctx, `SELECT n.nspname as "Schema",
+c.relname as "Name", 
+CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' END as "Type",
+pg_catalog.pg_get_userbyid(c.relowner) as "Owner"
+FROM pg_catalog.pg_class c
+    LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind IN ('r','')
+    AND n.nspname <> 'pg_catalog'
+    AND n.nspname <> 'information_schema'
+    AND n.nspname !~ '^pg_toast'
+AND pg_catalog.pg_table_is_visible(c.oid)
+ORDER BY 1,2;   `)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tables []TableRecord
+	for rows.Next() {
+		var name string
+		var schema string
+		var tableType string
+		var owner string
+		if err := rows.Scan(&schema, &name, &tableType, &owner); err != nil {
+			return nil, err
+		}
+
+		table := TableRecord{
+			Name: name,
+			Schema: schema,
+			Type: tableType,
+			Owner: owner,
+		}
+
+		tables = append(tables, table)
+	}
+
+	//return tables
+	// tableRecord := TableRecord{
+	// 	Name: "Test",
+	// }
+	// return []TableRecord{tableRecord}, nil
+
+	return tables, nil
 }

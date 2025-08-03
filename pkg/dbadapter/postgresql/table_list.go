@@ -1,8 +1,7 @@
 package postgresql
 
 import (
-	"context"
-	"database/sql"
+	"fmt"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -39,22 +38,32 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		SetBorders(false).
 		SetSelectable(true, false)
 
-	tableTable.SetCell(0, 0, tview.NewTableCell("Schema").SetSelectable(false).SetExpansion(1))
-	tableTable.SetCell(0, 1, tview.NewTableCell("Name").SetSelectable(false).SetExpansion(1))
-	tableTable.SetCell(0, 2, tview.NewTableCell("Type").SetSelectable(false).SetExpansion(1))
-	tableTable.SetCell(0, 3, tview.NewTableCell("Owner").SetSelectable(false).SetExpansion(1))
-	tableTable.SetCell(1, 0, tview.NewTableCell("Loading tables..."))
 
 	go func() {
-		tables, _ := listTables(tl.conn)
-		for i, table := range tables {
-			tableTable.SetCell(i+1, 0, tview.NewTableCell(table.Schema))
-			tableTable.SetCell(i+1, 1, tview.NewTableCell(table.Name))
-			tableTable.SetCell(i+1, 2, tview.NewTableCell(table.Type))
-			tableTable.SetCell(i+1, 3, tview.NewTableCell(table.Owner))
+		session.ShowMessageAsync("Loading tables", false)
+		
+		tables, err := tl.PostgreSQLAdapter.listTables()
+		session.CloseMessageAsync()
 
-			session.App.Draw()
+		if err != nil {
+			session.ShowMessageAsync(fmt.Sprintf("Error:\n%s", err), true)
+			fmt.Println(err)
 		}
+
+		session.App.QueueUpdateDraw(func(){
+			tableTable.SetCell(0, 0, tview.NewTableCell("Schema").SetSelectable(false).SetExpansion(1))
+			tableTable.SetCell(0, 1, tview.NewTableCell("Name").SetSelectable(false).SetExpansion(1))
+			tableTable.SetCell(0, 2, tview.NewTableCell("Type").SetSelectable(false).SetExpansion(1))
+			tableTable.SetCell(0, 3, tview.NewTableCell("Owner").SetSelectable(false).SetExpansion(1))
+
+			for i, table := range tables {
+				tableTable.SetCell(i+1, 0, tview.NewTableCell(table.Schema))
+				tableTable.SetCell(i+1, 1, tview.NewTableCell(table.Name))
+				tableTable.SetCell(i+1, 2, tview.NewTableCell(table.Type))
+				tableTable.SetCell(i+1, 3, tview.NewTableCell(table.Owner))
+
+			}
+		})
 		
 	}()
 
@@ -80,12 +89,24 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 			session.SetView(databaseList)
 		}
 	})
+
+	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+		rune := event.Rune()
+		switch rune {
+		case 'd':
+			database_list_modal := NewChangeDatabaseModal(tl.PostgreSQLAdapter, tl)
+			session.ShowModal(database_list_modal)
+			return nil			
+		}
+
+		return event
+	})
 	return tableTable
 }
 
 func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
-		session.NewKeyBinding("<enter>", "Get table record"),
+		session.NewKeyBinding("<enter>", "Query table"),
 	}
 
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
@@ -96,55 +117,6 @@ func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 
 func (i *TableList) GetInfo() (info []session.Info) {
 	info = i.PostgreSQLAdapter.GetInfo()
-	info = append(info, session.NewInfo("Database", i.database))
 	return
 }
 
-func listTables(conn *sql.DB) ([]TableRecord, error) {
-	ctx := context.Background()
-	rows, err := conn.QueryContext(ctx, `SELECT n.nspname as "Schema",
-c.relname as "Name", 
-CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' END as "Type",
-pg_catalog.pg_get_userbyid(c.relowner) as "Owner"
-FROM pg_catalog.pg_class c
-    LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-WHERE c.relkind IN ('r','')
-    AND n.nspname <> 'pg_catalog'
-    AND n.nspname <> 'information_schema'
-    AND n.nspname !~ '^pg_toast'
-AND pg_catalog.pg_table_is_visible(c.oid)
-ORDER BY 1,2;   `)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var tables []TableRecord
-	for rows.Next() {
-		var name string
-		var schema string
-		var tableType string
-		var owner string
-		if err := rows.Scan(&schema, &name, &tableType, &owner); err != nil {
-			return nil, err
-		}
-
-		table := TableRecord{
-			Name: name,
-			Schema: schema,
-			Type: tableType,
-			Owner: owner,
-		}
-
-		tables = append(tables, table)
-	}
-
-	//return tables
-	// tableRecord := TableRecord{
-	// 	Name: "Test",
-	// }
-	// return []TableRecord{tableRecord}, nil
-
-	return tables, nil
-}
