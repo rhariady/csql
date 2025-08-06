@@ -38,11 +38,19 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		// databaseList := NewDatabaseList(i.instanceName, userName)
 		session.CloseModal()
 		userName := userTable.GetCell(row, 0).Text
-		user, _ := i.instance.GetUserConfig(userName)
-		dbAdapter, _ := dbadapter.GetDBAdapter(i.instance.Type)
-		err := dbAdapter.Connect(session, i.instance, user, user.DefaultDatabase)
+		user, err := i.instance.GetUserConfig(userName)
 		if err != nil {
 			session.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
+		}
+		dbAdapter, err := dbadapter.GetDBAdapter(i.instance.Type)
+		if err != nil {
+			session.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
+			return
+		}
+		err = dbAdapter.Connect(session, i.instance, user, user.DefaultDatabase)
+		if err != nil {
+			session.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
+			return
 		}
 
 		// session.SetView(databaseList)

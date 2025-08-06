@@ -29,7 +29,7 @@ func GetDBAdapter(dbType DBType) (IDBAdapter, error) {
 		RegisterDBAdapter(adapter)
 		return adapter, nil
 	}
-	return nil, fmt.Errorf("Unknown DB Type")
+	return nil, fmt.Errorf("Unsupported DB Type")
 }
 
 var adapters []IDBAdapter
