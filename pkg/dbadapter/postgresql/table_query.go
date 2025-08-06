@@ -41,7 +41,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 	queryResultTable := tview.NewTable().
 		SetBorders(true).
 		SetSelectable(false, false).
-		SetFixed(1, 1)
+		SetFixed(1, 0)
 	
 	go func() {
 		rows, columns, err := queryTable(tq.conn, tq.table)

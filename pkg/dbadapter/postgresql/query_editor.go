@@ -36,7 +36,7 @@ func (tq *QueryEditor) GetContent(session *session.Session) tview.Primitive {
 	queryResultTable := tview.NewTable().
 		SetBorders(true).
 		SetSelectable(false, false).
-		SetFixed(1, 1)
+		SetFixed(1, 0)
 
 	queryInput.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlX {
