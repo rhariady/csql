@@ -44,14 +44,10 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 		SetFixed(1, 1)
 	
 	go func() {
-		// session.App.Stop()
-		// columns, _ := getTableColumn(tq.conn, tq.table)
-		// session.App.Stop()
-
-		rows, columns, _ := queryTable(tq.conn, tq.table)
-		// session.App.Stop()
-		// fmt.Printf("%v", rows)
-		// fmt.Printf("%v", err)
+		rows, columns, err := queryTable(tq.conn, tq.table)
+		if err != nil {
+			session.ShowMessageAsync(fmt.Sprintf("Error: %s", err), true)
+		}
 		for idx, column := range columns {
 			queryResultTable.SetCell(0, idx, tview.NewTableCell(column).SetSelectable(false))
 		}

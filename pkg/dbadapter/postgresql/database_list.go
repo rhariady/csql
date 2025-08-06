@@ -1,6 +1,8 @@
 package postgresql
 
 import (
+	"fmt"
+
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
@@ -17,9 +19,6 @@ type DatabaseRecord struct {
 
 type DatabaseList struct {
 	*PostgreSQLAdapter
-
-	// instance *config.InstanceConfig
-	// user *config.UserConfig
 }
 
 func (d *DatabaseList) GetTitle() string {
@@ -42,19 +41,11 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 
 	// Get databases
 	go func() {
-		databases, _ := d.PostgreSQLAdapter.listDatabases()
-		// if err != nil {
-		// 	// Show an error modal
-		// 	errorModal := tview.NewModal().
-		// 		SetText(fmt.Sprintf("Error loading databases: %v", err)).
-		// 		AddButtons([]string{"OK"}).
-		// 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-		// 			session.pages.RemovePage("errorModal")
-		// 			// session.app.app.SetFocus(userTable)
-		// 		})
-		// 	session.pages.AddPage("errorModal", errorModal, true, true)
-		// 	session.app.SetFocus(errorModal)
-		// }
+		databases, err := d.PostgreSQLAdapter.listDatabases()
+		if err != nil {
+			session.ShowMessageAsync(fmt.Sprintf("Error:\n%s", err), true)
+			return
+		}
 
 		// Populate table
 		for i, db := range databases {
@@ -67,7 +58,6 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 		}
 
 		// On selection, go to table
-
 		session.App.Draw()
 	}()
 
@@ -78,21 +68,8 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 		d.database = databaseTable.GetCell(row, 0).Text
 		tableList := NewTableList(d.PostgreSQLAdapter)
 		session.SetView(tableList)
-		// session.App.Stop() // Stop the tview app to hand over to psql
-
-		// instance := cfg.Instances[d.instanceName]
-		// user, _ := instance.GetUserConfig(d.userName)
-		// dbAdapter, _ := dbadapter.GetDBAdapter(instance.Type)
-		// dbAdapter.RunShell(&instance, user, dbName)
-
 	})
 
-	// Go back on escape
-	// databaseTable.SetDoneFunc(func(key tcell.Key) {
-	// 	if key == tcell.KeyEscape {
-	// 		pages.SwitchToPage("mainTable")
-	// 	}
-	// })
 	return databaseTable
 }
 
@@ -102,13 +79,6 @@ func (i *DatabaseList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	}
 	return
 }
-
-// func NewDatabaseList(instance *config.InstanceConfig, user *config.UserConfig) *DatabaseList {
-// 	return &DatabaseList{
-// 		instance: instance,
-// 		user: user,
-// 	}
-// }
 
 func NewDatabaseList(adapter *PostgreSQLAdapter) *DatabaseList {
 	return &DatabaseList{
