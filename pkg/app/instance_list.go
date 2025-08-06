@@ -10,7 +10,7 @@ import (
 )
 
 type InstanceList struct{
-	databaseInstanceTable *tview.Table
+	instanceTable *tview.Table
 }
 
 func (i *InstanceList) GetTitle() string {
@@ -19,25 +19,26 @@ func (i *InstanceList) GetTitle() string {
 
 func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 	// Create the main database table
-	i.databaseInstanceTable = tview.NewTable().
+	i.instanceTable = tview.NewTable().
 		SetBorders(false).
-		SetSelectable(true, false)
+		SetSelectable(true, false).
+		SetFixed(1, 1)
 
 	i.RefreshInstanceTable(s)
 
 	// 	Set the selected function for the table (triggered by Enter key)
-	i.databaseInstanceTable.SetSelectedFunc(func(row int, column int) {
+	i.instanceTable.SetSelectedFunc(func(row int, column int) {
 		if row == 0 { // Skip header row
 			return
 		}
-		instanceName := i.databaseInstanceTable.GetCell(row, 0).Text
+		instanceName := i.instanceTable.GetCell(row, 0).Text
 		instance := s.Config.GetInstance(instanceName)
 		userList := NewUserList(instance)
 		s.ShowModal(userList)
 	})
 
 	// Set input capture for 'a' key to trigger the same selection logic
-	i.databaseInstanceTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	i.instanceTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'a' {
 			// ShowAddDatabasesForm(app.app, app.active_session.pages, databaseInstanceList)
 			discoverDatabase := NewDiscoverDatabase(i)
@@ -45,8 +46,8 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 			return nil // Consume the event
 		}
 		if event.Rune() == 'd' {
-			row, column := i.databaseInstanceTable.GetSelection()
-			instanceName := i.databaseInstanceTable.GetCell(row, column).Text
+			row, column := i.instanceTable.GetSelection()
+			instanceName := i.instanceTable.GetCell(row, column).Text
 			
 			messages := fmt.Sprintf(`Are you sure you want to remove this instance:
 
@@ -57,7 +58,7 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 				if err != nil {
 					s.ShowMessage(fmt.Sprintf("Error: \n%s", err), true)
 				} else {
-					i.databaseInstanceTable.RemoveRow(row)
+					i.instanceTable.RemoveRow(row)
 					s.ShowMessage(fmt.Sprintf("Instance %s has been removed", instanceName), true)
 				}
 			}, func(s *session.Session){})
@@ -66,7 +67,7 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 		return event
 	})
 
-	return i.databaseInstanceTable
+	return i.instanceTable
 
 }
 
@@ -96,21 +97,21 @@ func NewInstanceList() *InstanceList {
 }
 
 func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
-	i.databaseInstanceTable.Clear()
-	i.databaseInstanceTable.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
+	i.instanceTable.Clear()
+	i.instanceTable.SetCell(0, 0, tview.NewTableCell("Name").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 1, tview.NewTableCell("Type").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 4, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
 
-	i.databaseInstanceTable.SetWrapSelection(true, true)
+	i.instanceTable.SetWrapSelection(true, true)
 	row := 1
 	for name, instance := range session.Config.Instances {
-		i.databaseInstanceTable.SetCell(row, 0, tview.NewTableCell(name))
-		i.databaseInstanceTable.SetCell(row, 1, tview.NewTableCell(instance.Type))
-		i.databaseInstanceTable.SetCell(row, 2, tview.NewTableCell(instance.Host))
-		i.databaseInstanceTable.SetCell(row, 3, tview.NewTableCell(fmt.Sprint(instance.Port)))
-		i.databaseInstanceTable.SetCell(row, 4, tview.NewTableCell(fmt.Sprint(instance.Params)))
+		i.instanceTable.SetCell(row, 0, tview.NewTableCell(name))
+		i.instanceTable.SetCell(row, 1, tview.NewTableCell(instance.Type))
+		i.instanceTable.SetCell(row, 2, tview.NewTableCell(instance.Host))
+		i.instanceTable.SetCell(row, 3, tview.NewTableCell(fmt.Sprint(instance.Port)))
+		i.instanceTable.SetCell(row, 4, tview.NewTableCell(fmt.Sprint(instance.Params)))
 		row++
 	}
 }
