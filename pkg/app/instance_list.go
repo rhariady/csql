@@ -104,7 +104,6 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 4, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
 
-	i.instanceTable.SetWrapSelection(true, true)
 	row := 1
 	for name, instance := range session.Config.Instances {
 		i.instanceTable.SetCell(row, 0, tview.NewTableCell(name))
