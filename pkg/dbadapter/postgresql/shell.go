@@ -15,23 +15,23 @@ import (
 	"github.com/rhariady/csql/pkg/auth"
 )
 
-type PsqlView struct {
+type ShellView struct {
 	*PostgreSQLAdapter
 	ptmx *os.File
 	cmd  *exec.Cmd
 }
 
-func NewPsqlView(adapter *PostgreSQLAdapter) *PsqlView {
-	return &PsqlView{
+func NewShellView(adapter *PostgreSQLAdapter) *ShellView {
+	return &ShellView{
 		PostgreSQLAdapter: adapter,
 	}
 }
 
-func (v *PsqlView) GetTitle() string {
-	return "psql"
+func (v *ShellView) GetTitle() string {
+	return "Shell"
 }
 
-func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
+func (v *ShellView) GetContent(s *session.Session) tview.Primitive {
 	terminal := tview.NewTextView().
 		SetDynamicColors(true).
 		SetScrollable(true).
@@ -39,7 +39,7 @@ func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
 			s.App.Draw()
 		})
 
-	terminal.SetBorder(true).SetTitle("psql")
+	terminal.SetBorder(false)
 	authConfig, err := auth.GetAuth(v.user.AuthType, v.user.AuthParams)
 	if err != nil {
 		s.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
@@ -62,9 +62,7 @@ func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
 	v.cmd = exec.Command("psql", dsn)
 	v.ptmx, err = pty.Start(v.cmd)
 	if err != nil {
-		s.App.QueueUpdateDraw(func() {
-			s.ShowMessageAsync(fmt.Sprintf("Error starting psql: %s", err), true)
-		})
+		s.ShowMessage(fmt.Sprintf("Error starting shell: %s", err), true)
 		return terminal
 	}
 
@@ -121,14 +119,14 @@ func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
 	return terminal
 }
 
-func (v *PsqlView) GetKeyBindings() (keybindings []*session.KeyBinding) {
+func (v *ShellView) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<escape>", "Go back to table list"),
 	}
 	return
 }
 
-func (v *PsqlView) GetInfo() (info []session.Info) {
+func (v *ShellView) GetInfo() (info []session.Info) {
 	info = v.PostgreSQLAdapter.GetInfo()
 	return
 }
