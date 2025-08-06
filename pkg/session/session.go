@@ -187,9 +187,8 @@ func (s *Session) ShowModal(view View) {
 		modalFlex.AddItem(legend, 1, 0, false)
 	}
 
-	modalFlex.SetBorderPadding(2, 0, 2, 2)
 	modalFlex.SetBorder(true).SetTitle(view.GetTitle())
-	
+
 	modal := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
