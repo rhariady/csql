@@ -41,8 +41,10 @@ func (tq *QueryEditor) GetContent(session *session.Session) tview.Primitive {
 	queryInput.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlX {
 			tq.query = queryInput.GetText()
+			session.ShowMessage("Executing query...", false)
 			go func() {
 				rows, columns, err := executeQuery(tq.conn, tq.query)
+				session.CloseMessageAsync()
 				if err != nil {
 					session.ShowMessageAsync(fmt.Sprintf("Error: %s", err), true)
 					return
