@@ -1,6 +1,8 @@
 package app
 
-import (	
+import (
+	"fmt"
+
 	_ "github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
@@ -17,7 +19,6 @@ func (a *AddUser) GetTitle() string {
 	return "Add New User"
 }
 
-// func ShowAddUserForm(app *tview.Application, pages *tview.Pages, mainTable *tview.Table, instanceName string) {
 func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 	var form *tview.Form
 	auth_type := tview.NewDropDown().
@@ -46,7 +47,11 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 			default_database := form.GetFormItemByLabel("Default database").(*tview.InputField).GetText()
 			_, authType := form.GetFormItem(2).(*tview.DropDown).GetCurrentOption()
 
-			authAdapter, _ := auth.GetAuth(authType, nil)
+			authAdapter, err := auth.GetAuth(authType, nil)
+			if err != nil {
+				s.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
+			}
+
 			authParams := authAdapter.ParseFormInput(form)
 			newUser := config.UserConfig{
 				Username:   username,
@@ -62,13 +67,9 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 
 			user_list := NewUserList(a.instance)
 			s.ShowModal(user_list)
-			// pages.RemovePage("addUserModal")
-			// pages.RemovePage("userSelectionModal")
-			// ShowUserSelection(app, pages, mainTable, instanceName)
 		}).
 		AddButton("Cancel", func() {
 			s.CloseModal()
-			// pages.RemovePage("addUserModal")
 		})
 
 	// form.SetBorder(true).SetTitle("Add New User")
@@ -82,17 +83,6 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 	// form.SetTitleColor(tcell.ColorDarkGreen)
 
 	auth_type.SetCurrentOption(0)
-
-	// modal := tview.NewFlex().
-	// 	AddItem(nil, 0, 1, false).
-	// 	AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-	// 		AddItem(nil, 0, 1, false).
-	// 		AddItem(form, 0, 1, true).
-	// 		AddItem(nil, 0, 1, false), 0, 1, false).
-	// 	AddItem(nil, 0, 1, false)
-
-	// pages.AddPage("addUserModal", modal, true, true)
-	// app.SetFocus(form)
 
 	return form
 }
