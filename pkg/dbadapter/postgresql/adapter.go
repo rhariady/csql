@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
-	"os/exec"
 
 	_ "github.com/lib/pq"
 
@@ -28,13 +26,26 @@ func (a *PostgreSQLAdapter) openConnection() error {
 		return err
 	}
 
-	password := authConfig.GetCredential()
+	password, err := authConfig.GetCredential()
+
+	if err != nil {
+		return err
+	}
 
 	connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", a.user.Username, password, a.instance.Host, a.instance.Port, a.database)
 
 	a.conn, err = sql.Open("postgres", connectionUri)
 
-	return err
+	if err != nil {
+		return err
+	}
+	
+	// Confirm a successful connection.
+	if err := a.conn.Ping(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.InstanceConfig, user *config.UserConfig, database string) error {
@@ -152,25 +163,6 @@ func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
 	}
 
 	return roles, nil
-}
-
-func (a *PostgreSQLAdapter) RunShell(instance *config.InstanceConfig, user *config.UserConfig, dbname string) {
-			authConfig, err := auth.GetAuth(user.AuthType, user.AuthParams)
-			if err != nil {
-				panic(err)
-			}
-
-			password := authConfig.GetCredential()
-			connectionUri := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user.Username, password, instance.Host, instance.Port, dbname)
-
-			fmt.Println("Connecting to:", connectionUri)
-			cmd := exec.Command("psql", connectionUri)
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			if err := cmd.Run(); err != nil {
-				fmt.Println("Error:", err)
-			}
 }
 
 func (a *PostgreSQLAdapter) listDatabases() ([]DatabaseRecord, error) {

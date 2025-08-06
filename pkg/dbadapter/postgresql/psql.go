@@ -42,7 +42,11 @@ func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
 	terminal.SetBorder(true).SetTitle("psql")
 	authConfig, _ := auth.GetAuth(v.user.AuthType, v.user.AuthParams)
 
-	password := authConfig.GetCredential()
+	password, err := authConfig.GetCredential()
+
+	if err != nil {
+		s.ShowMessage(fmt.Sprintf("Error retrieving credentials:\n%s", err), true)
+	}
 
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
 		v.user.Username,
@@ -52,8 +56,6 @@ func (v *PsqlView) GetContent(s *session.Session) tview.Primitive {
 		v.database,
 	)
 
-	var err error
-	
 	v.cmd = exec.Command("psql", dsn)
 	v.ptmx, err = pty.Start(v.cmd)
 	if err != nil {

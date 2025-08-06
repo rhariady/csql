@@ -24,7 +24,7 @@ var AuthList = map[AuthType]IAuth{
 }
 
 type IAuth interface{
-	GetCredential() string
+	GetCredential() (string, error)
 	GetFormInput(form *tview.Form)
 	ParseFormInput(form *tview.Form) map[string]interface{}
 }
@@ -58,8 +58,8 @@ type LocalAuth struct {
 	Password string `toml:"password"`
 }
 
-func (l LocalAuth) GetCredential() string {
-	return l.Password
+func (l LocalAuth) GetCredential() (string, error) {
+	return l.Password, nil
 }
 
 func (l LocalAuth) GetFormInput(form *tview.Form) {
@@ -80,7 +80,7 @@ type VaultAuth struct {
 	SecretKey string `toml:"secret_key"`
 }
 
-func (v VaultAuth) GetCredential() string {
+func (v VaultAuth) GetCredential() (string, error) {
 	vault_address := v.Address
 	vault_mount_path := v.MountPath
 	vault_secret_path := v.SecretPath
@@ -88,10 +88,10 @@ func (v VaultAuth) GetCredential() string {
 
 	password, err := getPasswordFromVault(vault_address, vault_mount_path, vault_secret_path, vault_secret_key)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return password
+	return password, nil
 }
 
 func (l VaultAuth) GetFormInput(form *tview.Form) {

@@ -40,7 +40,10 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		userName := userTable.GetCell(row, 0).Text
 		user, _ := i.instance.GetUserConfig(userName)
 		dbAdapter, _ := dbadapter.GetDBAdapter(i.instance.Type)
-		dbAdapter.Connect(session, i.instance, user, user.DefaultDatabase)
+		err := dbAdapter.Connect(session, i.instance, user, user.DefaultDatabase)
+		if err != nil {
+			session.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
+		}
 
 		// session.SetView(databaseList)
 		//ShowDatabaseList(app, pages, instanceName, userName, userTable)
