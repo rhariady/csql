@@ -69,6 +69,11 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 			session.SetView(tableList)
 		}
 	})
+
+	queryResultTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+		return tq.PostgreSQLAdapter.InputCapture(session, event)
+	})
+	
 	return queryResultTable
 }
 
@@ -76,6 +81,10 @@ func (i *TableQuery) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<escape>", "Go back to table list"),
 	}
+
+	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
+	keybindings = append(keybindings, base_keybinding...)
+
 	return
 }
 

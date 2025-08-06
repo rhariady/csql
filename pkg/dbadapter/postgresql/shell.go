@@ -123,6 +123,7 @@ func (v *ShellView) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<escape>", "Go back to table list"),
 	}
+
 	return
 }
 

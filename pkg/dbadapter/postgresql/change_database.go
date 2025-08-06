@@ -9,15 +9,12 @@ import (
 )
 
 type ChangeDatabaseModal struct {
-	*PostgreSQLAdapter
-	
-	last_view session.View
+	*PostgreSQLAdapter	
 }
 
-func NewChangeDatabaseModal(adapter *PostgreSQLAdapter, last_view session.View) *ChangeDatabaseModal {
+func NewChangeDatabaseModal(adapter *PostgreSQLAdapter) *ChangeDatabaseModal {
 	return &ChangeDatabaseModal{
 		PostgreSQLAdapter: adapter,
-		last_view: last_view,
 	}
 }
 

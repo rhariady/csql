@@ -76,34 +76,15 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 	})
 
 	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
-		rune := event.Rune()
-		switch rune {
-		case 'd':
-			database_list_modal := NewChangeDatabaseModal(tl.PostgreSQLAdapter, tl)
-			session.ShowModal(database_list_modal)
-			return nil
-		case 'w':
-			row, _ := tableTable.GetSelection()
-			tableName := tableTable.GetCell(row, 1).Text
-			viewQuery := NewQueryEditor(tl.PostgreSQLAdapter, "SELECT * FROM " + tableName)
-			session.SetView(viewQuery)
-			return nil
-		case 's':
-			shellView := NewShellView(tl.PostgreSQLAdapter)
-			session.SetView(shellView)
-			return nil
-		}
-
-		return event
+		return tl.PostgreSQLAdapter.InputCapture(session, event)
 	})
+
 	return tableTable
 }
 
 func (i *TableList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<enter>", "Query table"),
-		session.NewKeyBinding("[w]", "Write query"),
-		session.NewKeyBinding("[s]", "Open psql shell"),
 	}
 
 	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()

@@ -3,6 +3,7 @@ package postgresql
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
@@ -70,6 +71,10 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 		session.SetView(tableList)
 	})
 
+	databaseTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+		return d.PostgreSQLAdapter.InputCapture(session, event)
+	})
+
 	return databaseTable
 }
 
@@ -77,6 +82,10 @@ func (i *DatabaseList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
 		session.NewKeyBinding("<enter>", "List database tables"),
 	}
+
+	base_keybinding := i.PostgreSQLAdapter.GetKeyBindings()
+	keybindings = append(keybindings, base_keybinding...)
+
 	return
 }
 

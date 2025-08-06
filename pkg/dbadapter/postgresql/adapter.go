@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/lib/pq"
+	"github.com/gdamore/tcell/v2"
 
 	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/auth"
@@ -75,8 +75,29 @@ func (a *PostgreSQLAdapter) Close() error {
 	return nil
 }
 
+func (a *PostgreSQLAdapter) InputCapture(session *session.Session, event *tcell.EventKey) *tcell.EventKey {
+	rune := event.Rune()
+	switch rune {
+	case 'q':
+		viewQuery := NewQueryEditor(a, "SELECT * FROM ")
+		session.SetView(viewQuery)
+		return nil
+	case 'd':
+		database_list_modal := NewChangeDatabaseModal(a)
+		session.ShowModal(database_list_modal)
+		return nil
+	case 's':
+		shellView := NewShellView(a)
+		session.SetView(shellView)
+		return nil
+	}
+	return event
+}
+
 func (a *PostgreSQLAdapter) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
+		session.NewKeyBinding("[q]", "Query Editor"),
+		session.NewKeyBinding("[s]", "Start psql shell"),
 		session.NewKeyBinding("[d]", "Change database"),
 	}
 	return

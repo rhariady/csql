@@ -101,6 +101,7 @@ func (i *QueryEditor) GetKeyBindings() (keybindings []*session.KeyBinding) {
 		session.NewKeyBinding("<tab>", "Switch focus"),
 		session.NewKeyBinding("<esc>", "Go back to table list"),
 	}
+
 	return
 }
 
