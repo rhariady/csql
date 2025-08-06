@@ -23,11 +23,6 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 	var form *tview.Form
 	auth_type := tview.NewDropDown().
 		SetLabel("Auth Type")
-		// SetListStyles(tcell.StyleDefault.Background(tcell.ColorNone), tcell.StyleDefault.Background(tcell.ColorGrey)).
-		// SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorGrey)).
-		// SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
-
-	//SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey))
 
 	for authType, authConfig := range auth.AuthList {
 		auth_type.AddOption(authType, func() {

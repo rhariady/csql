@@ -26,10 +26,6 @@ func (d *DiscoverDatabase) GetContent(session *session.Session) tview.Primitive 
 		SetSelectable(true, false)
 
 	row := 0
-	// for _, disc := range discovery.DiscoveryMap {
-	// 	discoveryTypeTable.SetCell(row, 0, tview.NewTableCell(disc.GetLabel()).SetReference(disc).SetExpansion(1))
-	// 	row++
-	// }
 	
 	for _, disc := range discovery.GetAllDiscovery() {
 		discoveryTypeTable.SetCell(row, 0, tview.NewTableCell(disc.GetLabel()).SetReference(disc).SetExpansion(1))
