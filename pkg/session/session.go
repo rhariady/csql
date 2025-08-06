@@ -189,12 +189,15 @@ func (s *Session) ShowModal(view View) {
 
 	modalFlex.SetBorder(true).SetTitle(view.GetTitle())
 
+	rowFlex := tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(modalFlex, 0, 2, true).
+			AddItem(nil, 0, 1, false)
+
+
 	modal := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
-		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 1, false).
-			AddItem(modalFlex, 0, 1, true).
-			AddItem(nil, 0, 1, false), 0, 1, true).
+		AddItem(rowFlex, 0, 1, true).
 		AddItem(nil, 0, 1, false)
 
 	modalFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{

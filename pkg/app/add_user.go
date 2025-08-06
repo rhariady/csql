@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	_ "github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/config"
@@ -32,6 +32,9 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 			authConfig.GetFormInput(form)
 		})
 	}
+	auth_type.SetListStyles(tcell.StyleDefault.Background(tcell.ColorGray), tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorGreen)).
+		SetFocusedStyle(tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorGreen)).
+		SetPrefixStyle(tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorGreen))
 
 	form = tview.NewForm().
 		AddInputField("Username", "", 0, nil, nil).
@@ -67,15 +70,9 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 			s.CloseModal()
 		})
 
-	// form.SetBorder(true).SetTitle("Add New User")
-	// form.SetFieldBackgroundColor(tcell.ColorDarkGreen)
-	// fieldStyle := tcell.StyleDefault.
-	// 	Background(tcell.ColorGrey).
-	// 	Blink(true).
-	// 	Underline(tcell.ColorWhite)
-	// form.SetFieldStyle(fieldStyle)
-	// form.SetLabelColor(tcell.ColorDarkGreen)
-	// form.SetTitleColor(tcell.ColorDarkGreen)
+	form.SetFieldBackgroundColor(tcell.ColorGray)
+	form.SetLabelColor(tcell.ColorRed)
+	form.SetButtonBackgroundColor(tcell.ColorDarkGray)
 
 	auth_type.SetCurrentOption(0)
 
