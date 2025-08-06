@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/discovery"
@@ -112,13 +112,9 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 			s.CloseModal()
 		})
 
-	// form.SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey).Blink(true).Underline(tcell.ColorWhite))
-	// form.SetLabelColor(tcell.ColorDarkGreen)
-	// form.SetTitleColor(tcell.ColorDarkGreen)
-
-	// form.SetCancelFunc(func(){
-	// 	s.CloseModal()
-	// })
+	form.SetFieldBackgroundColor(tcell.ColorGray)
+	form.SetLabelColor(tcell.ColorRed)
+	form.SetButtonBackgroundColor(tcell.ColorDarkGray)
 
 	return form
 }
