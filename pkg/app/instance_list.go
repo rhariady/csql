@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -106,7 +107,7 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 4, tview.NewTableCell("Source").SetExpansion(1).SetSelectable(false)).
-		SetCell(0, 5, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
+		SetCell(0, 5, tview.NewTableCell("Params").SetExpansion(2).SetSelectable(false))
 
 	instancesName := slices.Sorted(maps.Keys(session.Config.Instances))
 
@@ -120,12 +121,18 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		}
 		sourceLabel = discovery.GetLabel()
 
+		var param_list []string
+		for param_key, param_value := range instance.Params {
+			param_list = append(param_list, fmt.Sprintf("[%s: %s]", param_key, param_value))
+		}
+		params := strings.Join(param_list, " ")
+
 		i.instanceTable.SetCell(row, 0, tview.NewTableCell(name))
 		i.instanceTable.SetCell(row, 1, tview.NewTableCell(instance.Type))
 		i.instanceTable.SetCell(row, 2, tview.NewTableCell(instance.Host))
 		i.instanceTable.SetCell(row, 3, tview.NewTableCell(fmt.Sprint(instance.Port)))
 		i.instanceTable.SetCell(row, 4, tview.NewTableCell(sourceLabel))
-		i.instanceTable.SetCell(row, 5, tview.NewTableCell(fmt.Sprint(instance.Params)))
+		i.instanceTable.SetCell(row, 5, tview.NewTableCell(params))
 		row++
 	}
 }

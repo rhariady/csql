@@ -38,6 +38,12 @@ func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []con
 			databaseType = "MySQL"
 			port = 3306
 		}
+
+		params := make(map[string]any)
+		params["Project ID"] = projectId
+		for k, v := range instance.Tags {
+			params[k] = v
+		}
 		newInstance := config.InstanceConfig{
 			Name:   instance.Name,
 			Source: GCP,
@@ -45,9 +51,7 @@ func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []con
 			Port:   port,
 			Type:   databaseType,
 			Users: []config.UserConfig{},
-			Params: map[string]interface{}{
-				"Project ID": projectId,
-			},
+			Params: params,
 		}
 		newInstances = append(newInstances, newInstance)
 		// cfg.AddInstance(instance.Name, newInstance)
