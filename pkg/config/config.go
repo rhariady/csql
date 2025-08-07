@@ -15,6 +15,7 @@ type Config struct {
 
 type InstanceConfig struct {
 	Name      string `toml:"name"`
+	Source    string `toml:"source"`
 	Host      string `toml:"host"`
 	Port      int `toml:"port"`
 	Type      string `toml:"type"`

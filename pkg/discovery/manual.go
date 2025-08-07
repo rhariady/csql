@@ -29,13 +29,12 @@ func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []co
 	
 	newInstance := config.InstanceConfig{
 		Name:   instanceName,
+		Source: Manual,
 		Host:   host,
 		Port:   port,
 		Type:   databaseType,
 		Users: []config.UserConfig{},
-		Params: map[string]interface{}{
-			"discovery": string(Manual),
-		},
+		Params: map[string]interface{}{},
 	}
 	// cfg.AddInstance(instanceName, newInstance)
 	newInstances = append(newInstances, newInstance)
@@ -45,6 +44,10 @@ func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []co
 
 func (d *ManualDiscovery) GetLabel() string {
 	return "Manual"
+}
+
+func (d *ManualDiscovery) GetType() string {
+	return Manual
 }
 
 func (d *ManualDiscovery) GetInstanceType() string {

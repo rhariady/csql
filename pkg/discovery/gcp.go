@@ -40,6 +40,7 @@ func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []con
 		}
 		newInstance := config.InstanceConfig{
 			Name:   instance.Name,
+			Source: GCP,
 			Host:   instance.IpAddresses[0].IpAddress,
 			Port:   port,
 			Type:   databaseType,
@@ -56,6 +57,10 @@ func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []con
 
 func (d *GCPDiscovery) GetLabel() string {
 	return "GCP (Auto Discovery)"
+}
+
+func (d *GCPDiscovery) GetType() string {
+	return GCP
 }
 
 func (d *GCPDiscovery) GetInstanceType() string {

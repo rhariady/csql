@@ -8,6 +8,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
+	"github.com/rhariady/csql/pkg/discovery"
 	"github.com/rhariady/csql/pkg/session"
 )
 
@@ -79,7 +80,7 @@ func AddInstanceForm() {
 
 func (i *InstanceList) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	keybindings = []*session.KeyBinding{
-		session.NewKeyBinding("[a]", "Discover new instance(s)"),
+		session.NewKeyBinding("[a]", "Add new instance(s)"),
 		session.NewKeyBinding("[d]", "Remove instance"),
 		session.NewKeyBinding("<enter>", "Connect to instance"),
 	}
@@ -104,18 +105,27 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		SetCell(0, 1, tview.NewTableCell("Type").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 2, tview.NewTableCell("Host").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
-		SetCell(0, 4, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
+		SetCell(0, 4, tview.NewTableCell("Source").SetExpansion(1).SetSelectable(false)).
+		SetCell(0, 5, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
 
 	instancesName := slices.Sorted(maps.Keys(session.Config.Instances))
 
 	row := 1
 	for _, name := range instancesName {
 		instance := session.Config.Instances[name]
+		discovery, err := discovery.GetDiscovery(instance.Source)
+		var sourceLabel string
+		if err != nil {
+			sourceLabel = ""
+		}
+		sourceLabel = discovery.GetLabel()
+
 		i.instanceTable.SetCell(row, 0, tview.NewTableCell(name))
 		i.instanceTable.SetCell(row, 1, tview.NewTableCell(instance.Type))
 		i.instanceTable.SetCell(row, 2, tview.NewTableCell(instance.Host))
 		i.instanceTable.SetCell(row, 3, tview.NewTableCell(fmt.Sprint(instance.Port)))
-		i.instanceTable.SetCell(row, 4, tview.NewTableCell(fmt.Sprint(instance.Params)))
+		i.instanceTable.SetCell(row, 4, tview.NewTableCell(sourceLabel))
+		i.instanceTable.SetCell(row, 5, tview.NewTableCell(fmt.Sprint(instance.Params)))
 		row++
 	}
 }
