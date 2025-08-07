@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -104,8 +106,11 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		SetCell(0, 3, tview.NewTableCell("Port").SetExpansion(1).SetSelectable(false)).
 		SetCell(0, 4, tview.NewTableCell("Params").SetExpansion(1).SetSelectable(false))
 
+	instancesName := slices.Sorted(maps.Keys(session.Config.Instances))
+
 	row := 1
-	for name, instance := range session.Config.Instances {
+	for _, name := range instancesName {
+		instance := session.Config.Instances[name]
 		i.instanceTable.SetCell(row, 0, tview.NewTableCell(name))
 		i.instanceTable.SetCell(row, 1, tview.NewTableCell(instance.Type))
 		i.instanceTable.SetCell(row, 2, tview.NewTableCell(instance.Host))
