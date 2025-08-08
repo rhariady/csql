@@ -21,7 +21,7 @@ func NewManualDiscovery(name, host string, port int) *ManualDiscovery {
 	}
 }
 
-func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig) {
+func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig, err error) {
 	_, databaseType := form.GetFormItem(0).(*tview.DropDown).GetCurrentOption()
 	instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
 	host := form.GetFormItem(2).(*tview.InputField).GetText()

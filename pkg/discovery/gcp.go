@@ -22,11 +22,11 @@ func NewGCPDiscovery(projectId string) *GCPDiscovery {
 	}
 }
 
-func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig) {
+func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig, err error) {
 	projectId := form.GetFormItem(0).(*tview.InputField).GetText()
 	instances, err := listGCPInstances(projectId)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	for _, instance := range instances {
 		var databaseType string

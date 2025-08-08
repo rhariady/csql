@@ -82,7 +82,12 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 		s.ShowMessage("Discovering Instance(s)", false)
 		go func() {
 
-			newInstances := d.discovery.DiscoverInstances(form)
+			newInstances, err := d.discovery.DiscoverInstances(form)
+
+			if err != nil {
+				s.ShowMessageAsync(fmt.Sprintf("Error:\n%s", err), true)
+				return
+			}
 
 			time.Sleep(1 * time.Second)
 			
