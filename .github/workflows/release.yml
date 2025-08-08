@@ -14,8 +14,6 @@ jobs:
         exclude:
           - goos: windows
             goarch: arm64
-          - goos: darwin
-            goarch: arm64 # Temporarily exclude until Apple Silicon runners are available or cross-compilation is set up
 
     steps:
     - name: Checkout code
