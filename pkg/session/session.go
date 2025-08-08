@@ -86,16 +86,25 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 	pages.AddPage("main", outerFlex, true, true)
 
 	app.SetRoot(pages, true)
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+
+	return &session
+}
+
+func (s *Session) setInputCapture() {
+	s.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == '/' {
-			session.commandBar.SetText("")
-			session.App.SetFocus(session.commandBar)
+			s.commandBar.SetText("")
+			s.App.SetFocus(s.commandBar)
 			return nil
 		}
 		return event
-	})
+	})	
+}
 
-	return &session
+func (s *Session) clearInputCapture() {
+	s.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		return event
+	})	
 }
 
 func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
@@ -157,6 +166,7 @@ func (s *Session) SetView(view View) {
 		})
 
 	s.App.SetFocus(content)
+	s.setInputCapture()
 
 	// keybindingMap := make(map[string]*KeyBinding)
 	// for _, keybinding := range keybindings {
@@ -175,6 +185,8 @@ func (s *Session) SetView(view View) {
 }
 
 func (s *Session) ShowModal(view View) {
+	s.clearInputCapture()
+
 	content := view.GetContent(s)
 	keybindings := view.GetKeyBindings()
 	keybindings = append(keybindings, NewKeyBinding("<esc>", "Close"))
@@ -214,6 +226,7 @@ func (s *Session) ShowModal(view View) {
 
 func (s *Session) CloseModal() {
 	s.pages.RemovePage("modal")
+	s.setInputCapture()
 }
 
 func (s *Session) ShowMessageAsync(text string, wait bool) {
