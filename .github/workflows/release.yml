@@ -28,7 +28,7 @@ jobs:
 
     - name: Build
       run: |
-        env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o csql-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} .
+        env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o csql-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} ./cmd/csql.go
       shell: bash
 
     - name: Upload artifact

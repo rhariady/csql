@@ -25,7 +25,7 @@ func main() {
 	} else {
 
 		application := tview.NewApplication()
-		
+
 		session := session.NewSession(application, cfg)
 		instanceList := app.NewInstanceList()
 		session.SetView(instanceList)
@@ -43,4 +43,3 @@ func main() {
 		// dbadapter.CloseAllAdapter()
 	}
 }
-
