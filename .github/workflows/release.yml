@@ -34,3 +34,12 @@ jobs:
       with:
         name: csql-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
         path: csql-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+
+    - name: Upload to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        file: csql-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}
+        asset_name: csql-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: "This is my release text"
