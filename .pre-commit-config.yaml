@@ -22,8 +22,7 @@ repos:
       - id: check-merge-conflict
         args:
           - --assume-in-merge
--   repo: https://github.com/tekwizely/pre-commit-golang
-    # See 'pre-commit help autoupdate'
+  - repo: https://github.com/tekwizely/pre-commit-golang
     rev: v1.0.0-rc.2
     hooks:
     #
@@ -108,18 +107,3 @@ repos:
     -   id: golangci-lint-pkg
     -   id: golangci-lint-repo-mod
     -   id: golangci-lint-repo-pkg
-    #
-    # Invoking Custom Go Tools
-    # - Configured *entirely* through the `args` attribute, ie:
-    #   args: [ go, test, ./... ]
-    # - Use arg `--hook:error-on-output` to indicate that any output from the tool
-    #   should be treated as an error.
-    # - Use the `name` attribute to provide better messaging when the hook runs
-    # - Use the `alias` attribute to be able to invoke your hook via `pre-commit run`
-    #
-    -   id: my-cmd
-    -   id: my-cmd-mod
-    -   id: my-cmd-pkg
-    -   id: my-cmd-repo
-    -   id: my-cmd-repo-mod
-    -   id: my-cmd-repo-pkg
