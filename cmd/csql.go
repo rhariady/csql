@@ -7,10 +7,10 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rivo/tview"
 
-	"github.com/rhariady/csql/pkg/config"
-	"github.com/rhariady/csql/pkg/session"
 	"github.com/rhariady/csql/pkg/app"
+	"github.com/rhariady/csql/pkg/config"
 	_ "github.com/rhariady/csql/pkg/dbadapter"
+	"github.com/rhariady/csql/pkg/session"
 )
 
 func main() {
@@ -34,7 +34,6 @@ func main() {
 		// sessions = make([]*session.Session, 10)
 
 		// sessions = append(sessions, session)
-
 
 		if err := application.Run(); err != nil {
 			panic(err)

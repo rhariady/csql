@@ -13,7 +13,7 @@ import (
 	"github.com/rhariady/csql/pkg/session"
 )
 
-type InstanceList struct{
+type InstanceList struct {
 	instanceTable *tview.Table
 }
 
@@ -57,7 +57,7 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 
 %s`, instanceName)
 
-			s.ShowAlert(messages, func(s *session.Session){
+			s.ShowAlert(messages, func(s *session.Session) {
 				err := s.Config.RemoveInstance(instanceName)
 				if err != nil {
 					s.ShowMessage(fmt.Sprintf("Error: \n%s", err), true)
@@ -65,7 +65,7 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 					i.instanceTable.RemoveRow(row)
 					s.ShowMessage(fmt.Sprintf("Instance %s has been removed", instanceName), true)
 				}
-			}, func(s *session.Session){})
+			}, func(s *session.Session) {})
 
 		}
 		return event

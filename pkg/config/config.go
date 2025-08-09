@@ -14,20 +14,20 @@ type Config struct {
 }
 
 type InstanceConfig struct {
-	Name      string `toml:"name"`
-	Source    string `toml:"source"`
-	Host      string `toml:"host"`
-	Port      int `toml:"port"`
-	Type      string `toml:"type"`
-	Users     []UserConfig
-	Params    map[string]interface{} `toml:"params"`
+	Name   string `toml:"name"`
+	Source string `toml:"source"`
+	Host   string `toml:"host"`
+	Port   int    `toml:"port"`
+	Type   string `toml:"type"`
+	Users  []UserConfig
+	Params map[string]interface{} `toml:"params"`
 }
 
 type UserConfig struct {
-	Username string `toml:"username"`
+	Username        string `toml:"username"`
 	DefaultDatabase string `toml:"default_database"`
 	// Auth AuthConfig `toml:"auth"`
-	AuthType string `toml:"auth_type"`
+	AuthType   string                 `toml:"auth_type"`
 	AuthParams map[string]interface{} `toml:"params"`
 }
 
@@ -89,7 +89,7 @@ func GetConfigFile() (*string, error) {
 	return &configFile, nil
 }
 
-func CheckConfigFile() (error) {
+func CheckConfigFile() error {
 	configFile, err := GetConfigFile()
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func GetConfig() (*Config, error) {
 	return &config, nil
 }
 
-func (newConfig *Config)  WriteConfig() (error) {
+func (newConfig *Config) WriteConfig() error {
 	var buffer bytes.Buffer
 	if err := toml.NewEncoder(&buffer).Encode(newConfig); err != nil {
 		return err

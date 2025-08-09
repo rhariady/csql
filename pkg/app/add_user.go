@@ -6,8 +6,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
-	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/auth"
+	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/session"
 )
 
@@ -52,10 +52,10 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 
 			authParams := authAdapter.ParseFormInput(form)
 			newUser := config.UserConfig{
-				Username:   username,
+				Username:        username,
 				DefaultDatabase: default_database,
-				AuthType:   authType,
-				AuthParams: authParams,
+				AuthType:        authType,
+				AuthParams:      authParams,
 			}
 
 			a.instance = s.Config.AddInstanceUser(a.instance.Name, newUser)

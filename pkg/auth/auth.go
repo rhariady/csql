@@ -15,7 +15,7 @@ type AuthType = string
 
 const (
 	Local AuthType = "Local"
-	Vault  AuthType = "Vault"
+	Vault AuthType = "Vault"
 )
 
 var AuthList = map[AuthType]IAuth{
@@ -23,7 +23,7 @@ var AuthList = map[AuthType]IAuth{
 	Vault: &VaultAuth{},
 }
 
-type IAuth interface{
+type IAuth interface {
 	GetCredential() (string, error)
 	GetFormInput(form *tview.Form)
 	ParseFormInput(form *tview.Form) map[string]interface{}
@@ -49,7 +49,7 @@ func GetAuth(authType string, authParams map[string]interface{}) (IAuth, error) 
 			return nil, err
 		}
 		return localAuth, nil
-  default:
+	default:
 		return nil, errors.New("Unsupported Auth Type")
 	}
 }
@@ -74,10 +74,10 @@ func (l LocalAuth) ParseFormInput(form *tview.Form) map[string]interface{} {
 }
 
 type VaultAuth struct {
-	Address string `toml:"address"`
-	MountPath string `toml:"mount_path"`
+	Address    string `toml:"address"`
+	MountPath  string `toml:"mount_path"`
 	SecretPath string `toml:"secret_path"`
-	SecretKey string `toml:"secret_key"`
+	SecretKey  string `toml:"secret_key"`
 }
 
 func (v VaultAuth) GetCredential() (string, error) {

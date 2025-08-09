@@ -13,11 +13,10 @@ import (
 )
 
 type TableQueryRecord struct {
-	Name string
+	Name   string
 	Schema string
-	Type string
-	Owner string
-
+	Type   string
+	Owner  string
 }
 
 type TableQuery struct {
@@ -29,7 +28,7 @@ type TableQuery struct {
 func NewTableQuery(adapter *PostgreSQLAdapter, table string) *TableQuery {
 	return &TableQuery{
 		PostgreSQLAdapter: adapter,
-		table: table,
+		table:             table,
 	}
 }
 
@@ -70,7 +69,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 		}
 	})
 
-	queryResultTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+	queryResultTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		return tq.PostgreSQLAdapter.InputCapture(session, event)
 	})
 

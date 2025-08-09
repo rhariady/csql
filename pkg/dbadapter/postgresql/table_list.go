@@ -10,11 +10,10 @@ import (
 )
 
 type TableRecord struct {
-	Name string
+	Name   string
 	Schema string
-	Type string
-	Owner string
-
+	Type   string
+	Owner  string
 }
 
 type TableList struct {
@@ -49,7 +48,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 			fmt.Println(err)
 		}
 
-		session.App.QueueUpdateDraw(func(){
+		session.App.QueueUpdateDraw(func() {
 			tableTable.SetCell(0, 0, tview.NewTableCell("Schema").SetSelectable(false).SetExpansion(1))
 			tableTable.SetCell(0, 1, tview.NewTableCell("Name").SetSelectable(false).SetExpansion(1))
 			tableTable.SetCell(0, 2, tview.NewTableCell("Type").SetSelectable(false).SetExpansion(1))
@@ -75,7 +74,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 		session.SetView(tableQuery)
 	})
 
-	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		return tl.PostgreSQLAdapter.InputCapture(session, event)
 	})
 

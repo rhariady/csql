@@ -10,15 +10,14 @@ import (
 )
 
 const (
-	Manual  DiscoveryType = "manual"
+	Manual DiscoveryType = "manual"
 )
 
 type ManualDiscovery struct {
 }
 
 func NewManualDiscovery(name, host string, port int) *ManualDiscovery {
-	return &ManualDiscovery{
-	}
+	return &ManualDiscovery{}
 }
 
 func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig, err error) {
@@ -33,7 +32,7 @@ func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []co
 		Host:   host,
 		Port:   port,
 		Type:   databaseType,
-		Users: []config.UserConfig{},
+		Users:  []config.UserConfig{},
 		Params: map[string]interface{}{},
 	}
 	// cfg.AddInstance(instanceName, newInstance)

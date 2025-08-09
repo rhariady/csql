@@ -11,15 +11,14 @@ import (
 )
 
 const (
-	GCP     DiscoveryType = "gcp"
+	GCP DiscoveryType = "gcp"
 )
 
 type GCPDiscovery struct {
 }
 
 func NewGCPDiscovery(projectId string) *GCPDiscovery {
-	return &GCPDiscovery{
-	}
+	return &GCPDiscovery{}
 }
 
 func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []config.InstanceConfig, err error) {
@@ -50,7 +49,7 @@ func (gcp *GCPDiscovery) DiscoverInstances(form *tview.Form) (newInstances []con
 			Host:   instance.IpAddresses[0].IpAddress,
 			Port:   port,
 			Type:   databaseType,
-			Users: []config.UserConfig{},
+			Users:  []config.UserConfig{},
 			Params: params,
 		}
 		newInstances = append(newInstances, newInstance)
@@ -72,7 +71,7 @@ func (d *GCPDiscovery) GetInstanceType() string {
 }
 
 func (d *GCPDiscovery) GetOptionField(form *tview.Form) {
-		form.AddInputField("Project ID", "", 0, nil, nil)
+	form.AddInputField("Project ID", "", 0, nil, nil)
 }
 
 func listGCPInstances(projectId string) ([]*sqladmin.DatabaseInstance, error) {

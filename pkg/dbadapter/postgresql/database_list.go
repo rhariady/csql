@@ -10,11 +10,11 @@ import (
 )
 
 type DatabaseRecord struct {
-	Name string
-	Owner string
-	Encoding string
-	Collate string
-	Ctype string
+	Name             string
+	Owner            string
+	Encoding         string
+	Collate          string
+	Ctype            string
 	AccessPrivileges string
 }
 
@@ -71,7 +71,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 		session.SetView(tableList)
 	})
 
-	databaseTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+	databaseTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		return d.PostgreSQLAdapter.InputCapture(session, event)
 	})
 

@@ -11,37 +11,37 @@ import (
 )
 
 type Session struct {
-	App *tview.Application
+	App    *tview.Application
 	Config *config.Config
 
-	pages *tview.Pages
+	pages      *tview.Pages
 	headerFlex *tview.Flex
-	mainFlex *tview.Flex
+	mainFlex   *tview.Flex
 	commandBar *tview.InputField
 }
 
 type KeyBinding struct {
-	hint string
+	hint        string
 	description string
 	// function func()
 }
 
 func NewKeyBinding(hint string, description string) *KeyBinding {
 	return &KeyBinding{
-		hint: hint,
+		hint:        hint,
 		description: description,
 		// function: function,
 	}
 }
 
 type Info struct {
-	key string
+	key   string
 	value string
 }
 
 func NewInfo(key string, value string) Info {
 	return Info{
-		key: key,
+		key:   key,
 		value: value,
 		// function: function,
 	}
@@ -75,11 +75,11 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 		AddItem(mainFlex, 0, 1, true)
 
 	session := Session{
-		App: app,
-		Config: config,
-		pages: pages,
+		App:        app,
+		Config:     config,
+		pages:      pages,
 		headerFlex: headerFlex,
-		mainFlex: mainFlex,
+		mainFlex:   mainFlex,
 		commandBar: commandBar,
 	}
 
@@ -202,17 +202,16 @@ func (s *Session) ShowModal(view View) {
 	modalFlex.SetBorder(true).SetTitle(view.GetTitle())
 
 	rowFlex := tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(nil, 0, 1, false).
-			AddItem(modalFlex, 0, 2, true).
-			AddItem(nil, 0, 1, false)
-
+		AddItem(nil, 0, 1, false).
+		AddItem(modalFlex, 0, 2, true).
+		AddItem(nil, 0, 1, false)
 
 	modal := tview.NewFlex().
 		AddItem(nil, 0, 1, false).
 		AddItem(rowFlex, 0, 1, true).
 		AddItem(nil, 0, 1, false)
 
-	modalFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+	modalFlex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
 			s.CloseModal()
 			return nil
@@ -241,7 +240,7 @@ func (s *Session) ShowMessage(text string, wait bool) {
 
 	if wait {
 		modal.
-			AddButtons([]string{"OK"}).SetDoneFunc(func(index int, label string){
+			AddButtons([]string{"OK"}).SetDoneFunc(func(index int, label string) {
 			s.CloseMessage()
 		})
 	}

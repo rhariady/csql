@@ -1,4 +1,3 @@
-
 package postgresql
 
 import (
@@ -11,8 +10,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
-	"github.com/rhariady/csql/pkg/session"
 	"github.com/rhariady/csql/pkg/auth"
+	"github.com/rhariady/csql/pkg/session"
 )
 
 type ShellView struct {

@@ -7,17 +7,17 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/auth"
+	"github.com/rhariady/csql/pkg/config"
 	"github.com/rhariady/csql/pkg/session"
 )
 
 type PostgreSQLAdapter struct {
 	// session *session.Session
 	instance *config.InstanceConfig
-	user *config.UserConfig
+	user     *config.UserConfig
 	database string
-	conn *sql.DB
+	conn     *sql.DB
 }
 
 func (a *PostgreSQLAdapter) openConnection() error {
@@ -223,11 +223,11 @@ ORDER BY
 		}
 
 		database := DatabaseRecord{
-			Name: name,
-			Owner: owner,
+			Name:     name,
+			Owner:    owner,
 			Encoding: encoding,
-			Collate: collate,
-			Ctype: ctype,
+			Collate:  collate,
+			Ctype:    ctype,
 		}
 
 		if accessPrivileges.Valid {
@@ -270,10 +270,10 @@ ORDER BY 1,2;   `)
 		}
 
 		table := TableRecord{
-			Name: name,
+			Name:   name,
 			Schema: schema,
-			Type: tableType,
-			Owner: owner,
+			Type:   tableType,
+			Owner:  owner,
 		}
 
 		tables = append(tables, table)

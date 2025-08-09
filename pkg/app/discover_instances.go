@@ -12,7 +12,7 @@ import (
 	"github.com/rhariady/csql/pkg/session"
 )
 
-type DiscoverDatabase struct{
+type DiscoverDatabase struct {
 	instance_list *InstanceList
 }
 
@@ -63,7 +63,7 @@ func NewDiscoverDatabase(instance_list *InstanceList) *DiscoverDatabase {
 	}
 }
 
-type DiscoverDatabaseDetail struct{
+type DiscoverDatabaseDetail struct {
 	*DiscoverDatabase
 	discovery discovery.IDiscovery
 }
@@ -102,13 +102,13 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 				messages = append(messages, newInstance.Name)
 			}
 
-			s.ShowAlertAsync(strings.Join(messages, "\n"), func(s *session.Session){
+			s.ShowAlertAsync(strings.Join(messages, "\n"), func(s *session.Session) {
 				for _, newInstance := range newInstances {
 					s.Config.AddInstance(newInstance)
 				}
 				s.Config.WriteConfig()
 				d.DiscoverDatabase.instance_list.RefreshInstanceTable(s)
-			}, func(s *session.Session){
+			}, func(s *session.Session) {
 			})
 
 		}()
@@ -139,12 +139,11 @@ func (i *DiscoverDatabaseDetail) ExecuteCommand(s *session.Session, command stri
 func NewDiscoverDatabaseDetail(parent *DiscoverDatabase, disc discovery.IDiscovery) *DiscoverDatabaseDetail {
 	return &DiscoverDatabaseDetail{
 		DiscoverDatabase: parent,
-		discovery: disc,
+		discovery:        disc,
 	}
 }
 
 // func ShowAddDatabasesForm(app *tview.Application, pages *tview.Pages, databaseInstanceList *tview.Table) {
-
 
 // 	form.SetBorder(true).SetTitle("Add New Instance(s)")
 // 	form.SetFieldStyle(tcell.StyleDefault.Background(tcell.ColorGrey).Blink(true).Underline(tcell.ColorWhite))

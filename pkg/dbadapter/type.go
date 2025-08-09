@@ -14,11 +14,11 @@ import (
 type DBType = string
 
 const (
-	PostgreSQL  DBType = "PostgreSQL"
+	PostgreSQL DBType = "PostgreSQL"
 )
 
-type IDBAdapter interface{
-	Connect(session *session.Session,  instance *config.InstanceConfig, userConfig *config.UserConfig, database string) error
+type IDBAdapter interface {
+	Connect(session *session.Session, instance *config.InstanceConfig, userConfig *config.UserConfig, database string) error
 	Close() error
 }
 
@@ -35,11 +35,11 @@ func GetDBAdapter(dbType DBType) (IDBAdapter, error) {
 var adapters []IDBAdapter
 
 func RegisterDBAdapter(adapter IDBAdapter) {
-		if adapters == nil {
-			adapters = make([]IDBAdapter, 0)
-		}
+	if adapters == nil {
+		adapters = make([]IDBAdapter, 0)
+	}
 
-		adapters = append(adapters, adapter)
+	adapters = append(adapters, adapter)
 }
 
 func CloseAllAdapter() {

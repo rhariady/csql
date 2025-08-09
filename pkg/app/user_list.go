@@ -12,7 +12,7 @@ import (
 	"github.com/rhariady/csql/pkg/session"
 )
 
-type UserList struct{
+type UserList struct {
 	instance *config.InstanceConfig
 }
 
@@ -57,7 +57,7 @@ func (i *UserList) GetContent(session *session.Session) tview.Primitive {
 		//ShowDatabaseList(app, pages, instanceName, userName, userTable)
 	})
 
-	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
+	userTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'a':
 			session.CloseModal()

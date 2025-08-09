@@ -1,4 +1,3 @@
-
 package postgresql
 
 import (
@@ -21,7 +20,7 @@ type QueryEditor struct {
 func NewQueryEditor(adapter *PostgreSQLAdapter, query string) *QueryEditor {
 	return &QueryEditor{
 		PostgreSQLAdapter: adapter,
-		query: query,
+		query:             query,
 	}
 }
 

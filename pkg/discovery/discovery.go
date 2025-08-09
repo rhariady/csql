@@ -9,7 +9,7 @@ import (
 
 type DiscoveryType = string
 
-type IDiscovery interface{
+type IDiscovery interface {
 	DiscoverInstances(*tview.Form) ([]config.InstanceConfig, error)
 	GetType() DiscoveryType
 	GetLabel() string
