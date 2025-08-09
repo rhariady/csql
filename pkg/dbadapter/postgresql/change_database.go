@@ -2,14 +2,14 @@ package postgresql
 
 import (
 	"fmt"
-	
+
 	"github.com/rivo/tview"
 
 	"github.com/rhariady/csql/pkg/session"
 )
 
 type ChangeDatabaseModal struct {
-	*PostgreSQLAdapter	
+	*PostgreSQLAdapter
 }
 
 func NewChangeDatabaseModal(adapter *PostgreSQLAdapter) *ChangeDatabaseModal {
@@ -55,11 +55,11 @@ func (d *ChangeDatabaseModal) GetContent(session *session.Session) tview.Primiti
 		}
 
 		tableList := NewTableList(d.PostgreSQLAdapter)
-		session.SetView(tableList)		
+		session.SetView(tableList)
 	})
 
 	return databaseTable
-	
+
 }
 
 func (d *ChangeDatabaseModal) GetKeyBindings() (keybinding []*session.KeyBinding) {

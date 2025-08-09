@@ -7,7 +7,7 @@ cSQL is a terminal-based user interface (TUI) for working with several types of 
 *   **Terminal-based UI:** A user-friendly, terminal-based interface for managing database instances.
 *   **Cloud Integration:** Discover and connect to cloud-based database instances (e.g., Google Cloud SQL).
 *   **Password Manager Integration:** Supports multiple password managers for authentication.
-*   **Persistent Configuration:** Automatically saves and loads your database instance configurations, ensuring your setup is preserved across sessions. 
+*   **Persistent Configuration:** Automatically saves and loads your database instance configurations, ensuring your setup is preserved across sessions.
 *   **Extensible:** The application is designed to be extensible, allowing for the addition of new database types, discovery and authentication methods.
 
 ### Supported Databases

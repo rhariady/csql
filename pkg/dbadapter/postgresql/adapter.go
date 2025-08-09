@@ -39,7 +39,7 @@ func (a *PostgreSQLAdapter) openConnection() error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Confirm a successful connection.
 	if err := a.conn.Ping(); err != nil {
 		return err
@@ -141,7 +141,7 @@ type RoleRecord struct {
 
 func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
 	ctx := context.Background()
-	rows, err := a.conn.QueryContext(ctx, `SELECT r.rolname, 
+	rows, err := a.conn.QueryContext(ctx, `SELECT r.rolname,
 			array_to_string(array_agg(CASE WHEN r.rolsuper THEN 'Superuser' END ||
 									CASE WHEN r.rolcreaterole THEN 'Create role' END ||
 									CASE WHEN r.rolcreatedb THEN 'Create DB' END ||
@@ -238,11 +238,11 @@ ORDER BY
 
 	return databases, nil
 }
-	
+
 func (a *PostgreSQLAdapter) listTables() ([]TableRecord, error) {
 	ctx := context.Background()
 	rows, err := a.conn.QueryContext(ctx, `SELECT n.nspname as "Schema",
-c.relname as "Name", 
+c.relname as "Name",
 CASE c.relkind WHEN 'r' THEN 'table' WHEN 'v' THEN 'view' WHEN 'i' THEN 'index' WHEN 'S' THEN 'sequence' WHEN 's' THEN 'special' END as "Type",
 pg_catalog.pg_get_userbyid(c.relowner) as "Owner"
 FROM pg_catalog.pg_class c

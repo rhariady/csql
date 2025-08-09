@@ -26,7 +26,7 @@ func (d *DiscoverDatabase) GetContent(session *session.Session) tview.Primitive 
 		SetSelectable(true, false)
 
 	row := 0
-	
+
 	for _, disc := range discovery.GetAllDiscovery() {
 		discoveryTypeTable.SetCell(row, 0, tview.NewTableCell(disc.GetLabel()).SetReference(disc).SetExpansion(1))
 		row++
@@ -90,7 +90,7 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 			}
 
 			time.Sleep(1 * time.Second)
-			
+
 			s.CloseMessageAsync()
 
 			messages := []string{
@@ -110,7 +110,7 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 				d.DiscoverDatabase.instance_list.RefreshInstanceTable(s)
 			}, func(s *session.Session){
 			})
-			
+
 		}()
 	}).
 		AddButton("Cancel", func() {

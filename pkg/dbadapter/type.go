@@ -39,7 +39,7 @@ func RegisterDBAdapter(adapter IDBAdapter) {
 			adapters = make([]IDBAdapter, 0)
 		}
 
-		adapters = append(adapters, adapter)	
+		adapters = append(adapters, adapter)
 }
 
 func CloseAllAdapter() {
@@ -49,4 +49,3 @@ func CloseAllAdapter() {
 		}
 	}
 }
-

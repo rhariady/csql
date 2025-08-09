@@ -26,7 +26,7 @@ func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []co
 	instanceName := form.GetFormItem(1).(*tview.InputField).GetText()
 	host := form.GetFormItem(2).(*tview.InputField).GetText()
 	port, _ := strconv.Atoi(form.GetFormItem(3).(*tview.InputField).GetText())
-	
+
 	newInstance := config.InstanceConfig{
 		Name:   instanceName,
 		Source: Manual,
@@ -38,7 +38,7 @@ func (d *ManualDiscovery) DiscoverInstances(form *tview.Form) (newInstances []co
 	}
 	// cfg.AddInstance(instanceName, newInstance)
 	newInstances = append(newInstances, newInstance)
-	
+
 	return
 }
 

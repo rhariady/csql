@@ -13,7 +13,7 @@ import (
 type Session struct {
 	App *tview.Application
 	Config *config.Config
-	
+
 	pages *tview.Pages
 	headerFlex *tview.Flex
 	mainFlex *tview.Flex
@@ -68,7 +68,7 @@ func NewSession(app *tview.Application, config *config.Config) *Session {
 	commandFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 	commandFlex.AddItem(commandBar, 1, 0, true)
 	commandFlex.SetBorder(true)
-	
+
 	outerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(headerFlex, 6, 0, false).
 		AddItem(commandFlex, 3, 0, false).
@@ -98,13 +98,13 @@ func (s *Session) setInputCapture() {
 			return nil
 		}
 		return event
-	})	
+	})
 }
 
 func (s *Session) clearInputCapture() {
 	s.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		return event
-	})	
+	})
 }
 
 func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
@@ -122,7 +122,7 @@ func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
 
 	for i, info := range info_list {
 		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.key)), i, 0, 1, 1, 0, 0, false)
-		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.value)), i, 1, 1, 1, 0, 0, false)		
+		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.value)), i, 1, 1, 1, 0, 0, false)
 	}
 
 	keyLegend := tview.NewGrid().
@@ -288,7 +288,7 @@ func (s *Session) ShowAlert(text string, ok func(*Session), cancel func(*Session
 			ok(s)
 		case "Cancel":
 			cancel(s)
-		}		
+		}
 	})
 
 	s.pages.AddPage("alert", modal, true, true)

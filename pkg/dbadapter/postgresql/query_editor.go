@@ -71,7 +71,7 @@ func (tq *QueryEditor) GetContent(session *session.Session) tview.Primitive {
 
 	queryInput.SetBorder(true)
 	queryResultTable.SetBorder(true)
-	
+
 	layout := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(queryInput, 0, 1, true).

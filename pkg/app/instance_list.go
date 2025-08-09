@@ -52,7 +52,7 @@ func (i *InstanceList) GetContent(s *session.Session) tview.Primitive {
 		if event.Rune() == 'd' {
 			row, column := i.instanceTable.GetSelection()
 			instanceName := i.instanceTable.GetCell(row, column).Text
-			
+
 			messages := fmt.Sprintf(`Are you sure you want to remove this instance:
 
 %s`, instanceName)
@@ -136,4 +136,3 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		row++
 	}
 }
-

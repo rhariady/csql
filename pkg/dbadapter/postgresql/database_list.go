@@ -94,4 +94,3 @@ func NewDatabaseList(adapter *PostgreSQLAdapter) *DatabaseList {
 		PostgreSQLAdapter: adapter,
 	}
 }
-

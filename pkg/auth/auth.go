@@ -140,4 +140,3 @@ func getPasswordFromVault(address string, mount_path string, secret_path string,
 
 	return password, nil
 }
-

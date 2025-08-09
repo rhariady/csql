@@ -89,5 +89,3 @@ func listGCPInstances(projectId string) ([]*sqladmin.DatabaseInstance, error) {
 	return instances.Items, nil
 	// return []*sqladmin.DatabaseInstance{}, nil
 }
-
-

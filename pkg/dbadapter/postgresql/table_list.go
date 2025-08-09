@@ -14,7 +14,7 @@ type TableRecord struct {
 	Schema string
 	Type string
 	Owner string
-	
+
 }
 
 type TableList struct {
@@ -40,7 +40,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 
 	go func() {
 		session.ShowMessageAsync("Loading tables", false)
-		
+
 		tables, err := tl.PostgreSQLAdapter.listTables()
 		session.CloseMessageAsync()
 
@@ -63,7 +63,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 
 			}
 		})
-		
+
 	}()
 
 	tableTable.SetSelectedFunc(func(row int, column int) {
@@ -97,4 +97,3 @@ func (i *TableList) GetInfo() (info []session.Info) {
 	info = i.PostgreSQLAdapter.GetInfo()
 	return
 }
-

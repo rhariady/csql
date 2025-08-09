@@ -17,7 +17,7 @@ type TableQueryRecord struct {
 	Schema string
 	Type string
 	Owner string
-	
+
 }
 
 type TableQuery struct {
@@ -42,7 +42,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 		SetBorders(true).
 		SetSelectable(false, false).
 		SetFixed(1, 0)
-	
+
 	go func() {
 		rows, columns, err := queryTable(tq.conn, tq.table)
 		if err != nil {
@@ -51,7 +51,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 		for idx, column := range columns {
 			queryResultTable.SetCell(0, idx, tview.NewTableCell(column).SetSelectable(false))
 		}
-		
+
 		for i, row := range rows {
 			for j, column := range columns {
 				queryResultTable.SetCell(i+1, j, tview.NewTableCell(row[column]))
@@ -60,7 +60,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 			queryResultTable.ScrollToBeginning()
 			session.App.Draw()
 		}
-		
+
 	}()
 
 	queryResultTable.SetDoneFunc(func(key tcell.Key) {
@@ -73,7 +73,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 	queryResultTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey{
 		return tq.PostgreSQLAdapter.InputCapture(session, event)
 	})
-	
+
 	return queryResultTable
 }
 
