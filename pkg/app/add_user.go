@@ -59,7 +59,10 @@ func (a *AddUser) GetContent(s *session.Session) tview.Primitive {
 			}
 
 			a.instance = s.Config.AddInstanceUser(a.instance.Name, newUser)
-			s.Config.WriteConfig()
+			err = s.Config.WriteConfig()
+			if err != nil {
+				s.ShowMessage(fmt.Sprintf("Error Writing Config:\n%s", err), true)
+			}
 
 			s.CloseModal()
 

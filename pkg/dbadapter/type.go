@@ -29,7 +29,7 @@ func GetDBAdapter(dbType DBType) (IDBAdapter, error) {
 		RegisterDBAdapter(adapter)
 		return adapter, nil
 	}
-	return nil, fmt.Errorf("Unsupported DB Type")
+	return nil, fmt.Errorf("unsupported database type")
 }
 
 var adapters []IDBAdapter
@@ -42,10 +42,11 @@ func RegisterDBAdapter(adapter IDBAdapter) {
 	adapters = append(adapters, adapter)
 }
 
-func CloseAllAdapter() {
+func CloseAllAdapter() (err error) {
 	for _, adapter := range adapters {
 		if adapter != nil {
-			adapter.Close()
+			err = adapter.Close()
 		}
 	}
+	return
 }

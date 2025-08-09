@@ -67,12 +67,11 @@ func (a *PostgreSQLAdapter) Connect(session *session.Session, instance *config.I
 	return nil
 }
 
-func (a *PostgreSQLAdapter) Close() error {
+func (a *PostgreSQLAdapter) Close() (err error) {
 	if a.conn != nil {
-		a.conn.Close()
+		err = a.conn.Close()
 	}
-
-	return nil
+	return
 }
 
 func (a *PostgreSQLAdapter) InputCapture(session *session.Session, event *tcell.EventKey) *tcell.EventKey {
@@ -139,7 +138,7 @@ type RoleRecord struct {
 	Description string
 }
 
-func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
+func (a *PostgreSQLAdapter) listRoles() (roles []RoleRecord, err error) {
 	ctx := context.Background()
 	rows, err := a.conn.QueryContext(ctx, `SELECT r.rolname,
 			array_to_string(array_agg(CASE WHEN r.rolsuper THEN 'Superuser' END ||
@@ -157,12 +156,17 @@ func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
 		GROUP BY r.rolname, r.oid
 		ORDER BY r.rolname;`)
 
+	defer func() {
+		r_err := rows.Close()
+		if r_err != nil {
+			err = r_err
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var roles []RoleRecord
 	for rows.Next() {
 		var role RoleRecord
 		var attributes sql.NullString
@@ -186,7 +190,7 @@ func (a *PostgreSQLAdapter) listRoles() ([]RoleRecord, error) {
 	return roles, nil
 }
 
-func (a *PostgreSQLAdapter) listDatabases() ([]DatabaseRecord, error) {
+func (a *PostgreSQLAdapter) listDatabases() (databases []DatabaseRecord, err error) {
 	// defer db.Close()
 
 	// rows, err := db.QueryContext(ctx, "SELECT datname FROM pg_database WHERE datistemplate = false;")
@@ -208,9 +212,13 @@ ORDER BY
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		r_err := rows.Close()
+		if r_err != nil {
+			err = r_err
+		}
+	}()
 
-	var databases []DatabaseRecord
 	for rows.Next() {
 		var name string
 		var owner string
@@ -239,7 +247,7 @@ ORDER BY
 	return databases, nil
 }
 
-func (a *PostgreSQLAdapter) listTables() ([]TableRecord, error) {
+func (a *PostgreSQLAdapter) listTables() (tables []TableRecord, err error) {
 	ctx := context.Background()
 	rows, err := a.conn.QueryContext(ctx, `SELECT n.nspname as "Schema",
 c.relname as "Name",
@@ -257,9 +265,13 @@ ORDER BY 1,2;   `)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		r_err := rows.Close()
+		if r_err != nil {
+			err = r_err
+		}
+	}()
 
-	var tables []TableRecord
 	for rows.Next() {
 		var name string
 		var schema string

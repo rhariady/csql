@@ -121,8 +121,8 @@ func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
 		SetColumns(12, 0)
 
 	for i, info := range info_list {
-		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.key)), i, 0, 1, 1, 0, 0, false)
-		info_grid.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", info.value)), i, 1, 1, 1, 0, 0, false)
+		info_grid.AddItem(tview.NewTextView().SetText(info.key), i, 0, 1, 1, 0, 0, false)
+		info_grid.AddItem(tview.NewTextView().SetText(info.value), i, 1, 1, 1, 0, 0, false)
 	}
 
 	keyLegend := tview.NewGrid().
@@ -132,8 +132,8 @@ func (s *Session) ShowHeader(info_list []Info, keyBindings []*KeyBinding) {
 	for i, binding := range keyBindings {
 		x := i / 6
 		y := i % 6
-		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", binding.hint)), y, x, 1, 1, 0, 0, false)
-		keyLegend.AddItem(tview.NewTextView().SetText(fmt.Sprintf("%s", binding.description)), y, x+1, 1, 1, 0, 0, false)
+		keyLegend.AddItem(tview.NewTextView().SetText(binding.hint), y, x, 1, 1, 0, 0, false)
+		keyLegend.AddItem(tview.NewTextView().SetText(binding.description), y, x+1, 1, 1, 0, 0, false)
 	}
 
 	// databaseInfo := tview
@@ -158,7 +158,10 @@ func (s *Session) SetView(view View) {
 			case tcell.KeyEnter:
 				command := s.commandBar.GetText()
 				s.commandBar.SetText("")
-				view.ExecuteCommand(s, command)
+				err := view.ExecuteCommand(s, command)
+				if err != nil {
+					s.ShowMessage(fmt.Sprintf("Error executing command:\n%s", err), true)
+				}
 			case tcell.KeyEsc:
 				s.commandBar.SetText("")
 				s.App.SetFocus(s.mainFlex.GetItem(0))

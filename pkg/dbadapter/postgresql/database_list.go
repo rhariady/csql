@@ -42,7 +42,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 
 	// Get databases
 	go func() {
-		databases, err := d.PostgreSQLAdapter.listDatabases()
+		databases, err := d.listDatabases()
 		if err != nil {
 			session.ShowMessageAsync(fmt.Sprintf("Error:\n%s", err), true)
 			return
@@ -72,7 +72,7 @@ func (d *DatabaseList) GetContent(session *session.Session) tview.Primitive {
 	})
 
 	databaseTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return d.PostgreSQLAdapter.InputCapture(session, event)
+		return d.InputCapture(session, event)
 	})
 
 	return databaseTable

@@ -106,7 +106,7 @@ func (i *QueryEditor) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	return
 }
 
-func executeQuery(conn *sql.DB, query string) ([]map[string]string, []string, error) {
+func executeQuery(conn *sql.DB, query string) (results []map[string]string, columns []string, err error) {
 	ctx := context.Background()
 
 	rows, err := conn.QueryContext(ctx, query)
@@ -114,10 +114,20 @@ func executeQuery(conn *sql.DB, query string) ([]map[string]string, []string, er
 	if err != nil {
 		return nil, nil, err
 	}
-	defer rows.Close()
+
+	defer func() {
+		r_err := rows.Close()
+		if r_err != nil {
+			err = r_err
+		}
+	}()
 
 	var result []map[string]string
-	columns, _ := rows.Columns()
+	columns, err = rows.Columns()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	for rows.Next() {
 		x := make([]interface{}, len(columns))
 		scans := make([]string, len(columns))
@@ -126,10 +136,13 @@ func executeQuery(conn *sql.DB, query string) ([]map[string]string, []string, er
 		for i := range scans {
 			x[i] = &scans[i]
 		}
-		rows.Scan(x...)
+		err = rows.Scan(x...)
+		if err != nil {
+			return nil, nil, err
+		}
 
 		for i, v := range scans {
-			row[columns[i]] = fmt.Sprintf("%s", v)
+			row[columns[i]] = v
 		}
 		result = append(result, row)
 	}

@@ -27,7 +27,7 @@ func (d *ChangeDatabaseModal) GetContent(session *session.Session) tview.Primiti
 		SetBorders(false).
 		SetSelectable(true, false)
 
-	databases, err := d.PostgreSQLAdapter.listDatabases()
+	databases, err := d.listDatabases()
 	if err != nil {
 		session.ShowMessage(fmt.Sprintf("Error:\n%s", err), true)
 		return nil

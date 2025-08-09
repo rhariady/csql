@@ -38,7 +38,7 @@ func GetDiscovery(discoveryType DiscoveryType) (IDiscovery, error) {
 	discoveriesMap := GetAllDiscovery()
 	discovery, found := discoveriesMap[discoveryType]
 	if !found {
-		return nil, fmt.Errorf("Unknown source: %s", discoveryType)
+		return nil, fmt.Errorf("unknown source: %s", discoveryType)
 	}
 	return discovery, nil
 }

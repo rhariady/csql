@@ -70,7 +70,7 @@ func (tq *TableQuery) GetContent(session *session.Session) tview.Primitive {
 	})
 
 	queryResultTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return tq.PostgreSQLAdapter.InputCapture(session, event)
+		return tq.InputCapture(session, event)
 	})
 
 	return queryResultTable
@@ -87,55 +87,29 @@ func (i *TableQuery) GetKeyBindings() (keybindings []*session.KeyBinding) {
 	return
 }
 
-func getTableColumn(conn *sql.DB, tableName string) ([]string, error) {
-	ctx := context.Background()
-	params := fmt.Sprintf("public.%s", tableName)
-	// fmt.Print(params)
-	// fmt.Print("Test2")
-	rows, err := conn.QueryContext(ctx, `SELECT attname            AS col
-FROM   pg_attribute
-WHERE  attrelid = $1::regclass
-AND    attnum > 0
-AND    NOT attisdropped
-ORDER  BY attnum;`, params)
-
-	// fmt.Print("Test1")
-	if err != nil {
-		// fmt.Print(err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	columns := make([]string, 0)
-	for rows.Next() {
-		// fmt.Print("Next")
-		//var table string
-		var column string
-		//var datatype string
-		if err := rows.Scan(&column); err != nil {
-			// fmt.Print(err)
-			return nil, err
-		}
-		// fmt.Print(column)
-		columns = append(columns, column)
-	}
-
-	return columns, nil
-}
-
-func queryTable(conn *sql.DB, tableName string) ([]map[string]string, []string, error) {
+func queryTable(conn *sql.DB, tableName string) (results []map[string]string, columns []string, err error) {
 	query := fmt.Sprintf("SELECT * FROM %s LIMIT 100", tableName)
 	ctx := context.Background()
 
 	rows, err := conn.QueryContext(ctx, query)
 
+	defer func() {
+		r_err := rows.Close()
+		if r_err != nil {
+			err = r_err
+		}
+	}()
+
 	if err != nil {
 		return nil, nil, err
 	}
-	defer rows.Close()
 
 	var result []map[string]string
-	columns, _ := rows.Columns()
+	columns, err = rows.Columns()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	for rows.Next() {
 		x := make([]interface{}, len(columns))
 		scans := make([]string, len(columns))
@@ -144,10 +118,13 @@ func queryTable(conn *sql.DB, tableName string) ([]map[string]string, []string, 
 		for i := range scans {
 			x[i] = &scans[i]
 		}
-		rows.Scan(x...)
+		err = rows.Scan(x...)
+		if err != nil {
+			return nil, nil, err
+		}
 
 		for i, v := range scans {
-			row[columns[i]] = fmt.Sprintf("%s", v)
+			row[columns[i]] = v
 		}
 		result = append(result, row)
 	}

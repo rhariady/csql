@@ -116,10 +116,9 @@ func (i *InstanceList) RefreshInstanceTable(session *session.Session) {
 		instance := session.Config.Instances[name]
 		discovery, err := discovery.GetDiscovery(instance.Source)
 		var sourceLabel string
-		if err != nil {
-			sourceLabel = ""
+		if err == nil {
+			sourceLabel = discovery.GetLabel()
 		}
-		sourceLabel = discovery.GetLabel()
 
 		var param_list []string
 		for param_key, param_value := range instance.Params {

@@ -18,8 +18,6 @@ type TableRecord struct {
 
 type TableList struct {
 	*PostgreSQLAdapter
-
-	tables []TableRecord
 }
 
 func NewTableList(adapter *PostgreSQLAdapter) *TableList {
@@ -40,7 +38,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 	go func() {
 		session.ShowMessageAsync("Loading tables", false)
 
-		tables, err := tl.PostgreSQLAdapter.listTables()
+		tables, err := tl.listTables()
 		session.CloseMessageAsync()
 
 		if err != nil {
@@ -75,7 +73,7 @@ func (tl *TableList) GetContent(session *session.Session) tview.Primitive {
 	})
 
 	tableTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		return tl.PostgreSQLAdapter.InputCapture(session, event)
+		return tl.InputCapture(session, event)
 	})
 
 	return tableTable

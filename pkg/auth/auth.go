@@ -50,7 +50,7 @@ func GetAuth(authType string, authParams map[string]interface{}) (IAuth, error) 
 		}
 		return localAuth, nil
 	default:
-		return nil, errors.New("Unsupported Auth Type")
+		return nil, errors.New("unsupported auth type")
 	}
 }
 

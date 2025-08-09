@@ -40,16 +40,19 @@ func (c *Config) AddInstance(instanceConfig InstanceConfig) {
 
 func (c *Config) RemoveInstance(instanceName string) error {
 	if c.Instances == nil {
-		return fmt.Errorf("Instance config is empty")
+		return fmt.Errorf("instance config is empty")
 	}
 
 	_, ok := c.Instances[instanceName]
 	if !ok {
-		return fmt.Errorf("Instance not found")
+		return fmt.Errorf("instance not found")
 	}
 
 	delete(c.Instances, instanceName)
-	c.WriteConfig()
+	err := c.WriteConfig()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -75,7 +78,7 @@ func (c *InstanceConfig) GetUserConfig(userName string) (*UserConfig, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("User Not Found")
+	return nil, fmt.Errorf("UserNotFound")
 }
 
 func GetConfigFile() (*string, error) {
@@ -89,14 +92,20 @@ func GetConfigFile() (*string, error) {
 	return &configFile, nil
 }
 
-func CheckConfigFile() error {
+func CheckConfigFile() (err error) {
 	configFile, err := GetConfigFile()
 	if err != nil {
 		return err
 	}
 
 	file, err := os.OpenFile(*configFile, os.O_RDWR|os.O_CREATE, 0644)
-	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err = file.Close()
+	}()
 
 	return nil
 }

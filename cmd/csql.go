@@ -14,7 +14,11 @@ import (
 )
 
 func main() {
-	config.CheckConfigFile()
+	err := config.CheckConfigFile()
+	if err != nil {
+		panic(err)
+	}
+
 	cfg, err := config.GetConfig()
 	if err != nil {
 		panic(err)

@@ -66,7 +66,12 @@ func (v *ShellView) GetContent(s *session.Session) tview.Primitive {
 	}
 
 	go func() {
-		defer v.ptmx.Close()
+		defer func() {
+			err := v.ptmx.Close()
+			if err != nil {
+				s.ShowMessageAsync(fmt.Sprintf("Error closing pty:\n%s", err), true)
+			}
+		}()
 		buf := make([]byte, 4096)
 		w := tview.ANSIWriter(terminal)
 		for {
@@ -75,7 +80,10 @@ func (v *ShellView) GetContent(s *session.Session) tview.Primitive {
 				return
 			}
 			s.App.QueueUpdateDraw(func() {
-				w.Write(buf[:n])
+				_, err = w.Write(buf[:n])
+				if err != nil {
+					s.ShowMessageAsync(fmt.Sprintf("Error writing to pty:\n%s", err), true)
+				}
 				terminal.ScrollToEnd()
 			})
 		}
@@ -84,10 +92,16 @@ func (v *ShellView) GetContent(s *session.Session) tview.Primitive {
 	terminal.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
-			v.ptmx.Write([]byte(string(event.Rune())))
+			_, err := v.ptmx.Write([]byte(string(event.Rune())))
+			if err != nil {
+				s.ShowMessage(fmt.Sprintf("Error writing to pty:\n%s", err), true)
+			}
 			return nil
 		case tcell.KeyEnter:
-			v.ptmx.Write([]byte{'\n'})
+			_, err := v.ptmx.Write([]byte{'\n'})
+			if err != nil {
+				s.ShowMessage(fmt.Sprintf("Error writing to pty:\n%s", err), true)
+			}
 			return nil
 		case tcell.KeyBackspace, tcell.KeyBackspace2:
 			currentText := terminal.GetText(false) // false to get raw text without regions
@@ -99,14 +113,24 @@ func (v *ShellView) GetContent(s *session.Session) tview.Primitive {
 			}
 			return nil
 		case tcell.KeyCtrlC:
-			v.cmd.Process.Signal(syscall.SIGINT)
+			err := v.cmd.Process.Signal(syscall.SIGINT)
+			if err != nil {
+				s.ShowMessage(fmt.Sprintf("Error sending signal to psql process:\n%s", err), true)
+			}
 			return nil
 		case tcell.KeyEsc:
 			if v.ptmx != nil {
-				v.ptmx.Close()
+				err := v.ptmx.Close()
+				if err != nil {
+					s.ShowMessage(fmt.Sprintf("Error closing pty:\n%s", err), true)
+				}
 			}
 			if v.cmd != nil && v.cmd.Process != nil {
-				v.cmd.Process.Kill()
+				err := v.cmd.Process.Kill()
+				if err != nil {
+					s.ShowMessage(fmt.Sprintf("Error killing psql process:\n%s", err), true)
+				}
+
 			}
 			tableList := NewTableList(v.PostgreSQLAdapter)
 			s.SetView(tableList)

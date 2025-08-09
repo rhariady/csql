@@ -106,7 +106,10 @@ func (d *DiscoverDatabaseDetail) GetContent(s *session.Session) tview.Primitive 
 				for _, newInstance := range newInstances {
 					s.Config.AddInstance(newInstance)
 				}
-				s.Config.WriteConfig()
+				err := s.Config.WriteConfig()
+				if err != nil {
+					s.ShowMessageAsync(fmt.Sprintf("Error Writing Config:\n%s", err), true)
+				}
 				d.DiscoverDatabase.instance_list.RefreshInstanceTable(s)
 			}, func(s *session.Session) {
 			})
